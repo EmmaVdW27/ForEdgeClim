@@ -5,7 +5,7 @@
 \title{Function to simulate air to air convection via heat convection equation. This is done in 3D.
 In this function, air temperature is updated and ready to use for the sensible heat flux calculation.}
 \usage{
-calculate_C(temp_air)
+calculate_C(temp_air, temp_soil)
 }
 \arguments{
 \item{temp_air}{Air temperature}

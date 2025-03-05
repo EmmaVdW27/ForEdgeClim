@@ -15,9 +15,7 @@ longwave_two_stream_RTM(
   Kd_lw_v,
   Kd_lw_h,
   omega_lw,
-  beta_lw,
-  season,
-  N_or_D
+  beta_lw
 )
 }
 \arguments{
@@ -42,13 +40,10 @@ longwave_two_stream_RTM(
 \item{omega_lw}{Single-scattering albedo for longwave RTM.}
 
 \item{beta_lw}{Phase function parameter for longwave RTM.}
-
-\item{season}{Season (e.g., "summer", "winter") used in the RTM.}
-
-\item{N_or_D}{Indicator for night or day.}
 }
 \value{
 A dataframe with computed longwave fluxes and net longwave radiation.
+A lot of these parameters are global parameters and actually do not need to be stated as arguments.
 }
 \description{
 This function performs a two-directional (vertical & horizontal) longwave

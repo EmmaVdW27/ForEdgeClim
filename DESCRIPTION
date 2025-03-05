@@ -3,7 +3,7 @@ Title: Microclimate modelling from forest core to edge
 Version: 0.0.0.9000
 Authors@R: 
     person("Emma", "Van de Walle", , "emmavdw@hotmail.com", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
+           comment = c(ORCID = "0000 0002 3365 1788"))
 Description: Microclimate modelling from forest core to edge.
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
     license
@@ -13,6 +13,6 @@ RoxygenNote: 7.3.2
 Imports: 
     dplyr,
     ggplot2,
-    nleqslv,
-    rootSolve,
-    suncalc
+    suncalc,
+    lidR,
+    data.table

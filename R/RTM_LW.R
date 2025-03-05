@@ -1,6 +1,5 @@
-# Two-stream RTM for longwave radiation and for a single column existing of layers/voxels with density values (%).
-# This model is inspired by the longwave RTM of the Ecosystem Demography model.
-
+#' Two-stream RTM for longwave radiation and for a single column existing of layers/voxels with density values (%).
+#' This model is inspired by the longwave RTM of the Ecosystem Demography model.
 #' @param soil_reflect Soil albedo (%)
 #' @param density Density of each layer (%)
 #' @param temperature Temperature of each layer (K)
@@ -14,8 +13,7 @@
 lw_two_stream <- function(soil_reflect, density, F_sky_lw, temperature, T_soil,
                           T_macro,
                           Kd,
-                          omega, beta,
-                          season, N_or_D) {
+                          omega, beta) {
   omega_g = soil_reflect
   F_sky_diff = F_sky_lw
 
@@ -143,14 +141,12 @@ lw_two_stream <- function(soil_reflect, density, F_sky_lw, temperature, T_soil,
 #' @param Kd_lw_h Diffuse extinction coefficient for horizontal LW RTM.
 #' @param omega_lw Single-scattering albedo for longwave RTM.
 #' @param beta_lw Phase function parameter for longwave RTM.
-#' @param season Season (e.g., "summer", "winter") used in the RTM.
-#' @param N_or_D Indicator for night or day.
 #' @return A dataframe with computed longwave fluxes and net longwave radiation.
 #' A lot of these parameters are global parameters and actually do not need to be stated as arguments.
 #' @export
 longwave_two_stream_RTM <- function(voxel_grid, micro_grid, lw_two_stream,
                              F_sky_lw, omega_g_lw_v, omega_g_lw_h, macro_temp,
-                             Kd_lw_v, Kd_lw_h, omega_lw, beta_lw, season, N_or_D) {
+                             Kd_lw_v, Kd_lw_h, omega_lw, beta_lw) {
 
   ##########################
   # Vertical shortwave RTM #
@@ -180,8 +176,7 @@ longwave_two_stream_RTM <- function(voxel_grid, micro_grid, lw_two_stream,
                            temperature = current_temperature, T_soil = soil_temp,
                            T_macro = macro_temp,
                            Kd = Kd_lw_v,
-                           omega = omega_lw, beta = beta_lw,
-                           season = season, N_or_D = N_or_D)
+                           omega = omega_lw, beta = beta_lw)
 
     # Save results without atmosphere layer
     result <- data.frame(
@@ -230,8 +225,7 @@ longwave_two_stream_RTM <- function(voxel_grid, micro_grid, lw_two_stream,
                            temperature = current_temperature, T_soil = 0, # no BB emission from the forest interior
                            T_macro = macro_temp,
                            Kd = Kd_lw_h,
-                           omega = omega_lw, beta = beta_lw,
-                           season = season, N_or_D = N_or_D)
+                           omega = omega_lw, beta = beta_lw)
 
     # Save results without atmosphere layer
     result <- data.frame(

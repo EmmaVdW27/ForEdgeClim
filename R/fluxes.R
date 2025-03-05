@@ -1,3 +1,25 @@
+#' Sinus for near-surface air temperature: time lagged wrt macro air temperature
+#'
+#' @param datetime Datetime object representing the current simulation time
+#' @return TG_diff Lagging temperature correction to determine soil temperature
+#' @export
+#'
+sin_lag <- function(datetime) {
+  t_now <- format(datetime, "%H")
+  t_now <- as.numeric(t_now)
+  lag_hours <- 6  # Hours of lagging
+
+  TG_mean <- (macro_temp_max + macro_temp_min) / 2 # mean near-surface temp
+  A <- (macro_temp_max - macro_temp_min) / 2 # amplitude of sinus
+  T <- 24  # Period of 1 day
+
+  # Macro air temp on current time point and near-surface temperature via lagging of macro temperature
+  TG_now <- TG_mean + A * cos((2 * pi / T) * (t_now - t_max))
+  TG_lagged <- TG_mean + A * cos((2 * pi / T) * (t_now - lag_hours - t_max))
+  TG_diff <- TG_now - TG_lagged
+  return(TG_diff)
+}
+
 #' Function to calculate ground heat flux G
 #'
 #' @param net_rad_ground Net radiation at ground surface
@@ -38,17 +60,19 @@ calculate_C <- function(temp_air, temp_soil){
   C_z <- array(0, dim = c(nx, ny, nz))
 
   # Simulate air convection via the heat convection equation
+  # Zero-flux boundary condition at 'core boundaries', ie, min x, min y & max y.
+  # At these boundaries the forest is assumed to continue indefinitely.
 
   # Boundary conditions for x-direction (including eastern and western forest edge)
-  C_x[nx, , ] <-  h * area * (T_air_grid[nx, , ] - macro_temp)  # Eastern edge (max x)
-  C_x[1, , ]  <-  h * area * (T_air_grid[1, , ] - core_temperature)  # Western edge (min x)
+  C_x[nx, , ] <-  h * area * (T_air_grid[nx, , ] - macro_temp) # Eastern edge (max x)
+  C_x[1, , ] <- 0 # Western edge (min x)
 
   C_x[2:nx, , ] <- C_x[2:nx, , ] + h * area * (T_air_grid[2:nx, , ] - T_air_grid[1:(nx-1), , ])
   C_x[1:(nx-1), , ] <- C_x[1:(nx-1), , ] + h * area * (T_air_grid[1:(nx-1), , ] - T_air_grid[2:nx, , ])
 
   # Boundary conditions for y-direction (including northern and southern forest edge)
-  C_y[, ny, ] <- h * area * (T_air_grid[, ny, ] - core_temperature)  # Northern edge (max y)
-  C_y[, 1, ]  <- h * area * (T_air_grid[, 1, ] - core_temperature)   # Southern edge (min y)
+  C_y[, ny, ] <- 0 # Northern edge (max y)
+  C_y[, 1, ] <- 0 # Southern edge (min y)
 
   C_y[, 1:(ny-1), ] <- C_y[, 1:(ny-1), ] + h * area * (T_air_grid[, 1:(ny-1), ] - T_air_grid[, 2:ny, ])
   C_y[, 2:ny, ] <- C_y[, 2:ny, ] + h * area * (T_air_grid[, 2:ny, ] - T_air_grid[, 1:(ny-1), ])
@@ -105,7 +129,7 @@ calculate_LE <- function(temperature, net_rad) {
   # slope of the saturation pressure curve; temp in °C; slope in kPa/K = kPa/°C
   slope = 4098 * saturated_vapor_pressure(temperature) / (temperature + 237.3)^2
   # Latent heat flux by the emperical method of Priestly-Taylor
-  LE = den * alpha * (net_rad) * slope / (slope + gamma_psy) # net rad - G?
+  LE = den * alpha_PT * (net_rad) * slope / (slope + gamma_psy) # net rad - G?
   # LE cannot be negative
   LE[LE<0] = 0
 

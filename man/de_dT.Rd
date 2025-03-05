@@ -4,7 +4,7 @@
 \alias{de_dT}
 \title{Function to calculate the derivative of the energy balance closure error to surface temperature}
 \usage{
-de_dT(temp)
+de_dT(temp, net_rad)
 }
 \arguments{
 \item{temp}{Surface temperature}

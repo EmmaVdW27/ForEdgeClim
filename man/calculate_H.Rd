@@ -4,7 +4,7 @@
 \alias{calculate_H}
 \title{Function to calculate sensible heat transfer between surface and air}
 \usage{
-calculate_H(T_surf)
+calculate_H(T_surf, T_air)
 }
 \arguments{
 \item{T_surf}{Surface temperature}

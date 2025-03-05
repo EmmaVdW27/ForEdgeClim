@@ -18,7 +18,7 @@ shortwave_two_stream_RTM(
   Kd_h,
   Kb_h,
   omega,
-  beta,
+  betad,
   beta0
 )
 }
@@ -49,12 +49,13 @@ shortwave_two_stream_RTM(
 
 \item{omega}{Scattering coefficient}
 
-\item{beta}{Fraction of scattered diffuse radiation in the backward direction}
+\item{betad}{Fraction of scattered diffuse radiation in the backward direction}
 
 \item{beta0}{Fraction of scattered direct radiation in the backward direction}
 }
 \value{
 Dataframe containing the combined results of the 2D shortwave RTM
+A lot of these parameters are global parameters and actually do not need to be stated as arguments.
 }
 \description{
 2D (vertical & horizontal) shortwave two-stream RTM

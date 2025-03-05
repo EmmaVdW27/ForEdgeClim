@@ -1,6 +1,5 @@
-# Two-stream RTM for shortwave radiation and for a single column existing of layers/voxels with density values (%).
-# This model is inspired by the shortwave RTM of the Ecosystem Demography model.
-
+#' Two-stream RTM for shortwave radiation and for a single column existing of layers/voxels with density values (%).
+#' This model is inspired by the shortwave RTM of the Ecosystem Demography model.
 #' @param soil_reflect Soil albedo (%)
 #' @param density Density of each layer (%)
 #' @param F_sky_diff Diffuse radiation (W/m2)
@@ -159,6 +158,7 @@ sw_two_stream <- function(soil_reflect, density,
 #' @param beta0 Fraction of scattered direct radiation in the backward direction
 #' @return Dataframe containing the combined results of the 2D shortwave RTM
 #' A lot of these parameters are global parameters and actually do not need to be stated as arguments.
+#' @importFrom suncalc getSunlightPosition
 #' @export
 
 shortwave_two_stream_RTM <- function(datetime, lat, lon, voxel_grid,

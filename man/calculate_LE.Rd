@@ -4,7 +4,7 @@
 \alias{calculate_LE}
 \title{Function to calculate latent heat flux LE (~ evapotranspiration, ET: LE = L_v . ET with L_v = latent heat of vaporization of water (J/kg))}
 \usage{
-calculate_LE(temperature)
+calculate_LE(temperature, net_rad)
 }
 \arguments{
 \item{temperature}{Surface temperature}
