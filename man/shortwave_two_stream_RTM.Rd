@@ -58,5 +58,6 @@ Dataframe containing the combined results of the 2D shortwave RTM
 A lot of these parameters are global parameters and actually do not need to be stated as arguments.
 }
 \description{
-2D (vertical & horizontal) shortwave two-stream RTM
+This function performs a two-directional (vertical & horizontal) shortwave
+two-stream RTM to estimate radiation fluxes in a forest voxel grid.
 }

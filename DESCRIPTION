@@ -15,4 +15,9 @@ Imports:
     ggplot2,
     suncalc,
     lidR,
-    data.table
+    data.table,
+    Rcpp, 
+    RcppArmadillo
+LinkingTo: 
+    Rcpp, 
+    RcppArmadillo

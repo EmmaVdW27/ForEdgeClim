@@ -30,6 +30,8 @@ create_input_data <- function(summer_day = TRUE) {
   #datetime = as.POSIXct("2023-06-23 12:00:00", tz = "CET")
   lat <<- 50.980
   lon <<- 3.816
+  length_transect <<- 135
+  height_canopy <<- 38
 
   # macro environment variables
   # F_sky_dir_init <- 400          # Direct solar beam radiation (W/m2); summer 400, autumn 200, winter 100, spring 275
@@ -92,6 +94,6 @@ create_input_data <- function(summer_day = TRUE) {
   gamma_psy <<- 0.066       # Psychrometric constant (kPa/K = kPa/°C)
 
   # parametes for energy balance convergence
-  energy_balance_tolerance <<- 10  # Maximum energy balance closure error between successive iteration steps to reach convergence (W/m2)
+  energy_balance_tolerance <<- 1  # Maximum energy balance closure error between successive iteration steps to reach convergence (W/m2)
 
 }

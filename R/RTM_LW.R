@@ -59,73 +59,78 @@ lw_two_stream <- function(soil_reflect, density, F_sky_lw, temperature, T_soil,
   S[1, 1] <- (gamma_minus[1] - omega_g*gamma_plus[1])*exp(-lambda[1]*density[1])
   S[1, 2] <- (gamma_plus[1] - omega_g*gamma_minus[1])*exp(lambda[1]*density[1])
 
-  # Filling of matrix S and vector y
-  for (i in 1:n) {
-    S[2 * i, 2 * i - 1] <- gamma_plus[i]
-    S[2 * i, 2 * i] <- gamma_minus[i]
-    S[2 * i, 2 * i + 1] <- -gamma_plus[i+1] * exp(-lambda[i+1] * (density[i+1]))
-    S[2 * i, 2 * i + 2] <- -gamma_minus[i+1] * exp(lambda[i+1] * (density[i+1]))
+  # **Vectorized matrix filling**
+  indices <- 1:n
+  idx_even <- 2 * indices
+  idx_odd <- idx_even - 1
+  idx_next <- indices + 1
 
-    S[2 * i + 1, 2 * i - 1] <- gamma_minus[i]
-    S[2 * i + 1, 2 * i] <- gamma_plus[i]
-    S[2 * i + 1, 2 * i + 1] <- -gamma_minus[i+1] * exp(-lambda[i+1] * (density[i+1]))
-    S[2 * i + 1, 2 * i + 2] <- -gamma_plus[i+1] * exp(lambda[i+1] * (density[i+1]))
+  # Calculate exponential terms
+  exp_lambda_density_neg <- exp(-lambda[idx_next] * density[idx_next])
+  exp_lambda_density_pos <- exp(lambda[idx_next] * density[idx_next])
 
-    y[2 * i] <- black[i+1] - black[i]
-    y[2 * i + 1] <- black[i+1] - black[i]
-  }
+  # Populate the S matrix
+  S[cbind(idx_even, idx_odd)] <- gamma_plus[indices]
+  S[cbind(idx_even, idx_even)] <- gamma_minus[indices]
+  S[cbind(idx_even, idx_even + 1)] <- -gamma_plus[idx_next] * exp_lambda_density_neg
+  S[cbind(idx_even, idx_even + 2)] <- -gamma_minus[idx_next] * exp_lambda_density_pos
 
-  # Solving matrix equation
-  x <- solve(S, y)
+  S[cbind(idx_even + 1, idx_odd)] <- gamma_minus[indices]
+  S[cbind(idx_even + 1, idx_even)] <- gamma_plus[indices]
+  S[cbind(idx_even + 1, idx_odd + 2)] <- -gamma_minus[idx_next] * exp_lambda_density_neg
+  S[cbind(idx_even + 1, idx_even + 2)] <- -gamma_plus[idx_next] * exp_lambda_density_pos
+
+  # Populate the vector y
+  y[idx_even] <- black[idx_next] - black[indices]
+  y[idx_even + 1] <- black[idx_next] - black[indices]
+
+  # Solving matrix equation using arma::solve from C++
+  x <- solve_rtm(S, y)
 
   # Calculate diffuse radiative fluxes
   # Radiative fluxes refer to the rate of energy transfer by electromagnetic radiation through a surface or area,
   # typically measured in W/m², encompassing all or specific wavelengths (e.g., shortwave or longwave radiation).
   # These values are mainly of interest when modelling e.g. energy balance, heat fluxes...
-  # Every down[k] and up[k] respectively refer to the downward and upward flux below layer k.
-  down <- numeric(n + 1)
-  up <- numeric(n + 1)
-  for (k in seq_len(n + 1)) {
-    k2 <- 2 * k
-    k2m1 <- k2 - 1
-    down[k] <- x[k2m1] * gamma_plus[k] * exp(-lambda[k]*density[k]) +
-      x[k2] * gamma_minus[k] * exp(lambda[k]*density[k]) +
-      black[k]
-    up[k] <- x[k2m1] * gamma_minus[k] * exp(-lambda[k]*density[k]) +
-      x[k2] * gamma_plus[k] * exp(lambda[k]*density[k]) +
-      black[k]
-  }
+  # Every down[k] and up[k] respectively refers to the downward and upward flux below layer k.
+  indices <- seq_len(n + 1)
+  k2 <- 2 * indices
+  k2m1 <- k2 - 1
+
+  down <- x[k2m1] * gamma_plus[indices] * exp(-lambda[indices] * density[indices]) +
+    x[k2] * gamma_minus[indices] * exp(lambda[indices] * density[indices]) +
+    black[indices]
+
+  up <- x[k2m1] * gamma_minus[indices] * exp(-lambda[indices] * density[indices]) +
+    x[k2] * gamma_plus[indices] * exp(lambda[indices] * density[indices]) +
+    black[indices]
+
 
   # Calculate light levels and netto absorbed or emitted radiation
   # Light levels refer to the intensity of photosynthetically active radiation (PAR, 400-700 nm) available for plants.
   # These values are mainly of interest when modelling e.g. photosyntheses, plant growth, schadow structure...
-  light_diff_level <- numeric(n)
-  net_lw <- numeric(n)
-  for (k in seq_len(n)) {
-    kp1 <- k + 1
-    light_diff_level[k] <- 0.5 * (down[k] + down[kp1])
-    net_lw[k] <- (down[kp1] - down[k]) + (up[k] - up[kp1])
-  }
+  indices2 <- seq_len(n)
+  kp1 <- indices2 + 1
+
+  #light_diff_level <- 0.5 * (down[indices2] + down[kp1])
+  net_lw <- (down[kp1] - down[indices2]) + (up[indices2] - up[kp1])
   # There are no light levels for atmosphere
-  light_diff_level[n+1] = NA
+  #light_diff_level <- c(light_diff_level, NA)
 
-
-  # Voeg de geabsorbeerde straling toe aan de output
   result <- data.frame(
-    layer = c(paste("layer", 1:n), "atmosphere"),
+    #layer = c(paste("layer", 1:n), "atmosphere"),
     density = density,
     temperature = c(temperature, NA),
     F_d_down = round(down, 0),
     F_d_up = round(up, 0),
-    BB_emission = black,
-    net_lw = c(round(net_lw, 0), 0)  # No netto radiation in the atmosphere (no structure there)
+    #BB_emission = black,
+    net_lw = c(round(net_lw, 0), 0)  # No net radiation in the atmosphere (no structure there)
   )
 
   return(result)
 
 }
 
-#' 2D Longwave Two-Stream Radiative Transfer Model (RTM)
+#' 2D (vertical & horizontal) longwave two-stream RTM
 #'
 #' This function performs a two-directional (vertical & horizontal) longwave
 #' two-stream RTM to estimate radiation fluxes in a forest voxel grid.
@@ -143,131 +148,104 @@ lw_two_stream <- function(soil_reflect, density, F_sky_lw, temperature, T_soil,
 #' @param beta_lw Phase function parameter for longwave RTM.
 #' @return A dataframe with computed longwave fluxes and net longwave radiation.
 #' A lot of these parameters are global parameters and actually do not need to be stated as arguments.
+#' @importFrom data.table setorder setnames
 #' @export
+
+
 longwave_two_stream_RTM <- function(voxel_grid, micro_grid, lw_two_stream,
-                             F_sky_lw, omega_g_lw_v, omega_g_lw_h, macro_temp,
-                             Kd_lw_v, Kd_lw_h, omega_lw, beta_lw) {
+                                    F_sky_lw, omega_g_lw_v, omega_g_lw_h, macro_temp,
+                                    Kd_lw_v, Kd_lw_h, omega_lw, beta_lw) {
+
+  voxel_grid <- data.table::as.data.table(voxel_grid)
+  micro_grid <- data.table::as.data.table(micro_grid)
+
+  # Set coordinate names of micro_grid similar to the ones of voxel_grid
+  data.table::setnames(micro_grid, old = c("x", "y", "z"), new = c("X", "Y", "Z"))
+
+  # Merge voxel_grid and micro_grid and filter T_soil
+  micro_grid <- micro_grid[, .(X, Y, Z, temperature, T_soil = ifelse(Z == 1, T_soil, NA))]
+  voxel_grid <- voxel_grid[micro_grid, on = .(X, Y, Z)]
+  #voxel_grid <- merge(voxel_grid, micro_grid, by = c("X", "Y", "Z"), all.x = TRUE)
+
 
   ##########################
-  # Vertical shortwave RTM #
+  # Vertical longwave RTM  #
   ##########################
 
-  # Unique XY-combinations
-  xy_combinations <- unique(voxel_grid[, c("X", "Y")])
-
-  # Save results
-  results_list_lw_v <- list()
-
-  # Iteration over unique XY-combinations
-  for (row in seq_len(nrow(xy_combinations))) {
-    xy <- xy_combinations[row, ]
-    x_pos <- xy$X
-    y_pos <- xy$Y
-
-    # Density values and temperature values of current column
-    current_density <- voxel_grid$density[voxel_grid$X == x_pos & voxel_grid$Y == y_pos]
-    current_temperature <- micro_grid$temperature[micro_grid$x == x_pos & micro_grid$y == y_pos]
-    soil_temp <- micro_grid$T_soil[micro_grid$x == x_pos & micro_grid$y == y_pos & micro_grid$z == 1]
+  # Calculate fluxes per unique XY combination
+  final_results_lw_vertical <- voxel_grid[, {
+    # Single value for soil temp
+    T_soil_value <- na.omit(T_soil)[1]
 
     # Number of layers
-    n = length(current_density)
+    n_layers <- .N
 
-    fluxes = lw_two_stream(soil_reflect = omega_g_lw_v, density = current_density, F_sky_lw = F_sky_lw,
-                           temperature = current_temperature, T_soil = soil_temp,
-                           T_macro = macro_temp,
-                           Kd = Kd_lw_v,
-                           omega = omega_lw, beta = beta_lw)
-
-    # Save results without atmosphere layer
-    result <- data.frame(
-      X = rep(x_pos, n),  # Fill X for every layer
-      Y = rep(y_pos, n),  # Fill Y for every layer
-      Z = 1:n,
-      density = current_density,
-      temperature = current_temperature,
-      F_d_down = fluxes$F_d_down[-(n+1)],
-      F_d_up = fluxes$F_d_up[-(n+1)],
-      net_lw = fluxes$net_lw[-(n+1)]
+    fluxes <- lw_two_stream(
+      soil_reflect = omega_g_lw_v, density = density, F_sky_lw = F_sky_lw,
+      temperature = temperature, T_soil = T_soil_value, T_macro = macro_temp,
+      Kd = Kd_lw_v, omega = omega_lw, beta = beta_lw
     )
 
-    results_list_lw_v[[row]] <- result
-  }
+    .(X, Y, Z = seq_len(n_layers), density, temperature,
+      F_d_down = fluxes$F_d_down[1:n_layers],
+      F_d_up = fluxes$F_d_up[1:n_layers],
+      net_lw = fluxes$net_lw[1:n_layers])
+  }, by = .(X, Y)]
 
-  # Combine all results
-  final_results_lw_v <- do.call(rbind, results_list_lw_v)
-  # Sort by X and Y
-  final_results_lw_vertical <- final_results_lw_v[order(final_results_lw_v$X, final_results_lw_v$Y), ]
+
+  data.table::setorder(final_results_lw_vertical, X, Y, Z)
 
   ############################
-  # Horizontal shortwave RTM #
+  # Horizontal longwave RTM  #
   ############################
 
-  # Unique YZ-combinations
-  yz_combinations <- unique(voxel_grid[, c("Y", "Z")])
-
-  # Save results
-  results_list_lw_h <- list()
-
-  # Iteration over unique YZ-combinations
-  for (row in seq_len(nrow(yz_combinations))) {
-    yz <- yz_combinations[row, ]
-    y_pos <- yz$Y
-    z_pos <- yz$Z
-
-    # Density values and temperature values of current YZ column
-    current_density <- voxel_grid$density[voxel_grid$Y == y_pos & voxel_grid$Z == z_pos]
-    current_temperature <- micro_grid$temperature[micro_grid$y == y_pos & micro_grid$z == z_pos]
+  # Calculate fluxes per unique YZ combination
+  final_results_lw_horizontal <- voxel_grid[, {
 
     # Number of layers
-    n = length(current_density)
+    n_layers <- .N
 
-    fluxes = lw_two_stream(soil_reflect = omega_g_lw_h, density = current_density, F_sky_lw = F_sky_lw/4,
-                           temperature = current_temperature, T_soil = 0, # no BB emission from the forest interior
-                           T_macro = macro_temp,
-                           Kd = Kd_lw_h,
-                           omega = omega_lw, beta = beta_lw)
-
-    # Save results without atmosphere layer
-    result <- data.frame(
-      Y = rep(y_pos, n),  # Fill Y for every layer
-      Z = rep(z_pos, n),  # Fill Z for every layer
-      X = 1:n,
-      density = current_density,
-      temperature = current_temperature,
-      F_d_down = fluxes$F_d_down[-(n+1)],
-      F_d_up = fluxes$F_d_up[-(n+1)],
-      net_lw = fluxes$net_lw[-(n+1)]
+    fluxes <- lw_two_stream(
+      soil_reflect = omega_g_lw_h, density = density, F_sky_lw = F_sky_lw / 4,
+      temperature = temperature, T_soil = 0, T_macro = macro_temp,
+      Kd = Kd_lw_h, omega = omega_lw, beta = beta_lw
     )
 
-    results_list_lw_h[[row]] <- result
+    .(Y, Z, X = seq_len(n_layers), density, temperature,
+      F_d_down = fluxes$F_d_down[1:n_layers],
+      F_d_up = fluxes$F_d_up[1:n_layers],
+      net_lw = fluxes$net_lw[1:n_layers])
+  }, by = .(Y, Z)]
 
-  }
-
-  # Combine all results
-  final_results_lw_h <- do.call(rbind, results_list_lw_h)
-  # Sort by Y en Z
-  final_results_lw_horizontal <- final_results_lw_h[order(final_results_lw_h$Y, final_results_lw_h$Z), ]
+  data.table::setorder(final_results_lw_horizontal, X, Y, Z)
 
   #########################################
   # Combining both directions into 2D RTM #
   #########################################
 
-  # Make sure both dataframes have same order of rows
-  final_results_lw_horizontal <- final_results_lw_horizontal[order(final_results_lw_horizontal$X, final_results_lw_horizontal$Y, final_results_lw_horizontal$Z), ]
-  final_results_lw_vertical <- final_results_lw_vertical[order(final_results_lw_vertical$X, final_results_lw_vertical$Y, final_results_lw_vertical$Z), ]
-
-  # Calculate sum of corresponding columns and create new dataframe
-  final_results_lw_2D <- data.frame(
-    X = final_results_lw_horizontal$X,
-    Y = final_results_lw_horizontal$Y,
-    Z = final_results_lw_horizontal$Z,
-    density = final_results_lw_horizontal$density,
-    temperature = final_results_lw_horizontal$temperature,
-    F_d_down = final_results_lw_horizontal$F_d_down + final_results_lw_vertical$F_d_down,
-    F_d_up = final_results_lw_horizontal$F_d_up + final_results_lw_vertical$F_d_up,
-    net_lw = final_results_lw_horizontal$net_lw + final_results_lw_vertical$net_lw
+  final_results_lw_2D <- merge(
+    final_results_lw_horizontal[, .(X, Y, Z, density, temperature,
+                                    F_d_down_h = F_d_down,
+                                    F_d_up_h = F_d_up,
+                                    net_lw_h = net_lw)],
+    final_results_lw_vertical[, .(X, Y, Z, density, temperature,
+                                  F_d_down_v = F_d_down,
+                                  F_d_up_v = F_d_up,
+                                  net_lw_v = net_lw)],
+    by = c("X", "Y", "Z", "density", "temperature"),
+    all = TRUE
   )
 
-  return(final_results_lw_2D)
+  # Sum fluxes
+  final_results_lw_2D[, `:=`(
+    F_d_down = F_d_down_h + F_d_down_v,
+    F_d_up = F_d_up_h + F_d_up_v,
+    net_lw = net_lw_h + net_lw_v
+  )]
 
+  # Select relevant columns
+  final_results_lw_2D <- final_results_lw_2D[, .(X, Y, Z, density, temperature, F_d_down, F_d_up, net_lw)]
+
+  return(final_results_lw_2D)
 }
+

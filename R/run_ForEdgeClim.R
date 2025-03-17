@@ -22,12 +22,9 @@ run_foredgeclim <- function(structure_grid) {
   print('🚩 𝙁𝙤𝙧𝙀𝙙𝙜𝙚𝘾𝙡𝙞𝙢')
   start = Sys.time()
   print('════════════════════════')
-
-
   #############################################
   # 2D SHORTWAVE RADIATIVE TRANSFER MODELLING #
   #############################################
-
   print('SW RTM ☀️')
   voxel_grid = structure_grid
   final_results_2D <<- shortwave_two_stream_RTM(datetime, lat, lon, voxel_grid,
@@ -35,10 +32,10 @@ run_foredgeclim <- function(structure_grid) {
                            omega_g_v, omega_g_h,
                            Kd_v, Kb_v, Kd_h, Kb_h,
                            omega, betad, beta0) # A lot of these parameters are global parameters and actually do not need to be stated as arguments.
-  saveRDS(final_results_2D, 'Output/SW_DATA.rds')
+  # saveRDS(final_results_2D, 'Output/SW_DATA.rds')
   # final_results_2D = readRDS('Output/SW_DATA.rds')
-  # F_sky_dir_v <<- 0#600
-  # F_sky_dir_h <<- 0#281
+  # F_sky_dir_v <<- 600
+  # F_sky_dir_h <<- 281
 
   den <<- final_results_2D$density
   net_SW <- final_results_2D$net_sw
@@ -46,7 +43,7 @@ run_foredgeclim <- function(structure_grid) {
   SW_up <- final_results_2D$F_d_up
   x_coords <- voxel_grid$X
   y_coords <- voxel_grid$Y
-  z_coords <- voxel_grid$Z
+  z_coords <<- voxel_grid$Z
 
   # dimensions grid
   x_dim <<- max(x_coords)  # Length in x-direction
@@ -70,11 +67,9 @@ run_foredgeclim <- function(structure_grid) {
     temperature = macro_temp,
     T_soil = macro_temp
   )
-
   final_results_lw_2D = longwave_two_stream_RTM(voxel_grid, micro_grid, lw_two_stream,
                                                 F_sky_lw, omega_g_lw_v, omega_g_lw_h, macro_temp,
                                                 Kd_lw_v, Kd_lw_h, omega_lw, beta_lw)
-
   net_LW <- final_results_lw_2D$net_lw
   LW_down <- final_results_lw_2D$F_d_down
   LW_up <- final_results_lw_2D$F_d_up
@@ -87,25 +82,19 @@ run_foredgeclim <- function(structure_grid) {
   G = calculate_G(net_rad_ground)
 
   # Define T_soil from ground flux with ground conductance/convection g_soil
-  # For this, first make a rudimentary guess on T air by exponential weighting of the boundary temperatures
-  x_threshold = 135  # x-value from where influence is being felt, ie, forest edge value
-  dis_macro_x = ifelse(x_coords <= x_threshold, x_dim - x_coords + 1, 0) # Zero distance for x > 135, and only allow decrease for x <= 135
-  dis_macro_z = z_dim - z_coords+1
-  alpha_macro = log(0.5) / infl_macro
-  w_macro_x = exp(alpha_macro*dis_macro_x)
-  w_macro_z = exp(alpha_macro*dis_macro_z)
-  T_air_vec = macro_temp*(w_macro_x + w_macro_z)/(w_macro_x+w_macro_z)
+  T_air_vec = macro_temp # very first guess on air temp
   micro_grid$T_soil = G/g_soil + T_air_vec - TG_diff
 
   # Define micro_grid$temperature based on macro temp and initial net radiation + random noise
   micro_grid$temperature =  macro_temp + 0.01*net_radiation_init + rnorm(nrow(micro_grid), mean = 0, sd = 0.1)
 
-  # Air temperature update based on linearisation as is done in microclimc (Maclean & Klinges, 2021)
+  # Air temperature update based on a linearisation as is done in microclimc (Maclean & Klinges, 2021)
   # This linearisation simplifies the complex nonlinear interactions between leaves and air, making the calculations more efficient.
   # This linearisation is mostly valid when there are small temperature differences between T air en T leaf, when there is
   # sufficient air streaming, when the net radiation or the humidity is not extreme, when the forest structure is quite homogeneous.
   # The linearisation calculates the air temperature as influenced by the macro and soil boundary temperature and the surface temperature.
-  T_air_vec = micro_grid$temperature + rnorm(nrow(micro_grid), mean = 0, sd = 0.1)
+  T_air_vec = micro_grid$temperature + rnorm(nrow(micro_grid), mean = 0, sd = 0.1) # second, better guess on air temp
+
   # Define T_ground for every voxel in a vertical xy-column as T_soil
   micro_grid <- micro_grid |>
     dplyr::group_by(x, y) |>
@@ -113,10 +102,17 @@ run_foredgeclim <- function(structure_grid) {
     dplyr::ungroup()
 
   # Determine weights for each component in the linearisation via exponential weighting
+  x_threshold = length_transect # x-value from where macro influence is being felt, ie, forest edge value
+  z_threshold = height_canopy  # z-value from where macro influence is being felt, ie, canopy top value
+  dis_macro_x = ifelse(x_coords > x_threshold, 0, x_threshold - x_coords + 1)
+  dis_macro_z = ifelse(z_coords > z_threshold, 0, z_threshold - z_coords + 1)
   dis_soil = z_coords
   dis_forest = 0.5 # size of a voxel edge = 1m, so distance from structure is on average 0.5m
+  alpha_macro = log(0.5) / infl_macro
   alpha_soil = log(0.5)/infl_soil
   alpha_forest = log(0.5)/infl_forest
+  w_macro_x = exp(alpha_macro*dis_macro_x)
+  w_macro_z = exp(alpha_macro*dis_macro_z)
   w_soil = exp(alpha_soil*dis_soil)
   w_forest = exp(alpha_forest*dis_forest)
 
@@ -159,6 +155,7 @@ run_foredgeclim <- function(structure_grid) {
     # Netto radiation for structure
     net_radiation = net_SW + net_LW
 
+
     ###############
     # Ground flux #
     ###############
@@ -173,6 +170,7 @@ run_foredgeclim <- function(structure_grid) {
       dplyr::mutate(T_ground = T_soil[z == 1][1]) |>
       dplyr::ungroup()
 
+
     ##############################
     # AIR TO AIR HEAT CONVECTION #
     ##############################
@@ -181,12 +179,14 @@ run_foredgeclim <- function(structure_grid) {
     dt = 1 # convection step is 1, ie, the iteration step taken for temp convergence
     T_air_vec = T_air_vec - calculate_C(T_air_vec,micro_grid$T_ground)*dt/(Cp*V*rho)
 
+
     ######################
     # SENSIBLE HEAT FLUX #
     ######################
 
     print('   H ♨️')
     sensible_flux = calculate_H(micro_grid$temperature,T_air_vec)
+
 
     ####################
     # LATENT HEAT FLUX #
@@ -195,11 +195,12 @@ run_foredgeclim <- function(structure_grid) {
     print('   LE 💧')
     latent_flux <- calculate_LE(micro_grid$temperature-273.15,net_radiation) # temp in calculate_LE must be in °C
 
+
     ##################
     # ENERGY BALANCE #
     ##################
 
-    # Surface energy balance
+    # Surface energy balance with ground flux for Z == 1 layer
     energy_balance_surf <- net_radiation - sensible_flux - latent_flux
     print(paste0('   Max E_bal error = ', round(max(abs(energy_balance_surf)), 2)))
     error_current = max(abs(energy_balance_surf))
@@ -238,7 +239,7 @@ run_foredgeclim <- function(structure_grid) {
       dplyr::ungroup()
     micro_grid$mean_temp = (micro_grid$mean_temp_x + micro_grid$mean_temp_y + micro_grid$mean_temp_z)/3
 
-    # Air temperature update based on linearisation as is done in microclimc (Maclean & Klinges, 2021)
+    # Air temperature update based on a linearisation as is done in microclimc (Maclean & Klinges, 2021)
     T_air_vec <- ( (w_macro_x + w_macro_z)*g_macro * macro_temp + w_soil*g_soil * micro_grid$T_ground + ifelse(den == 0, w_forest*g_forest * micro_grid$mean_temp, w_forest*g_forest *micro_grid$temperature) )/ ( (w_macro_x + w_macro_z)*g_macro + w_soil*g_soil + w_forest*g_forest)
 
     }

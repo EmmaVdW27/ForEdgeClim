@@ -35,18 +35,9 @@ generate_DTM_grid_TLS <- function(las_file = 'Data/June_2023_Gontrode_forest.las
   dtm_df <- as.data.frame(dtm_raster, xy = TRUE)
   colnames(dtm_df) <- c("X", "Y", "Z")
 
-  # Convert ground points to a dataframe
-  ground_points <- as.data.frame(dtm@data[dtm@data$Classification == 2, c("X", "Y", "Z")])
-  # Fit a plane (planar fit)
-  fit <- lm(Z ~ X + Y, data = ground_points)
-  a <- coef(fit)["X"]
-  b <- coef(fit)["Y"]
-  c <- coef(fit)["(Intercept)"]
-
-  # Transform the Z-coordinates to level the ground
-  las@data$Z <- las@data$Z - (a * las@data$X + b * las@data$Y + c)
-
-  # Remove points below the horizontally defined ground level
+  # Normalize height of the LAS file (everywhere set ground level to Z = 0)
+  las <- lidR::normalize_height(las, dtm_raster)
+  # Remove the points below ground level (for points that were e.g. wrongly not classified as ground points)
   las <- lidR::filter_poi(las, Z >= 0)
 
   ###################
@@ -80,12 +71,11 @@ generate_DTM_grid_TLS <- function(las_file = 'Data/June_2023_Gontrode_forest.las
 
 
   # Normalize the density values
-  max_n <- max(full_grid$n, na.rm = TRUE)
-  max_Z <- max(full_grid$Z, na.rm = TRUE)
-  # Log transformation: Reduces dominance of low-altitude high-density areas
-  # Exponential scaling: Boosts contribution of higher voxels even with lower density
-  scaling <- log1p(full_grid$n) * exp(0.5*full_grid$Z/max_Z)
-
+  # Log transformation: Reduces dominance of high-density areas (mainly ground level) (necessary even after downsampling*) -> make distribution less extreme
+  # * downsampling is done with the RiSCAN octree filter previous to the import of the las file
+  # Exponential scaling: Boosts contribution of higher voxels even with lower density -> sort of correction for occlusion
+  # The factor 0.5 determine how strong higher layers get more weight. 0.5 seems reasonable for a temperate forest.
+  scaling <- log1p(full_grid$n) * exp(0.5*full_grid$Z/max(full_grid$Z))
   full_grid$density <- scaling/max(scaling)
 
   finish = Sys.time()

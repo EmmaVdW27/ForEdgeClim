@@ -31,12 +31,8 @@ sw_two_stream <- function(soil_reflect, density,
   S <- matrix(0, nrow = 2 * n + 2, ncol = 2 * n + 2)
   y <- numeric(2 * n + 2)
 
-  # Calculate direct radiation profile (exp decay)
-  direct_radiation = numeric(n+1)
-  direct_radiation[n+1] = F_sky_dir
-  for (i in seq(n, 1)) {
-    direct_radiation[i] <- direct_radiation[i+1] * exp(-density[i]/mu0[i])
-  }
+  # Calculate direct radiation profile (exp decay from top to bottom)
+  direct_radiation <- F_sky_dir * rev(cumprod(rev(exp(-density / mu0))))
 
   # Auxiliary variables
   # Gamma
@@ -67,70 +63,76 @@ sw_two_stream <- function(soil_reflect, density,
   S[1, 1] <- (gamma_minus[1] - omega_g*gamma_plus[1])*exp(-lambda[1]*density[1])
   S[1, 2] <- (gamma_plus[1] - omega_g*gamma_minus[1])*exp(lambda[1]*density[1])
 
-  # Filling of matrix S and vector y
-  for (i in 1:n) {
-    S[2 * i, 2 * i - 1] <- gamma_plus[i]
-    S[2 * i, 2 * i] <- gamma_minus[i]
-    S[2 * i, 2 * i + 1] <- -gamma_plus[i+1] * exp(-lambda[i+1] * (density[i+1]))
-    S[2 * i, 2 * i + 2] <- -gamma_minus[i+1] * exp(lambda[i+1] * (density[i+1]))
+  # **Vectorized matrix filling**
+  indices <- 1:n
+  idx_even <- 2 * indices
+  idx_odd <- idx_even - 1
+  idx_next <- indices + 1
 
-    S[2 * i + 1, 2 * i - 1] <- gamma_minus[i]
-    S[2 * i + 1, 2 * i] <- gamma_plus[i]
-    S[2 * i + 1, 2 * i + 1] <- -gamma_minus[i+1] * exp(-lambda[i+1] * (density[i+1]))
-    S[2 * i + 1, 2 * i + 2] <- -gamma_plus[i+1] * exp(lambda[i+1] * (density[i+1]))
+  # Calculate exponential terms
+  exp_lambda_density_neg <- exp(-lambda[idx_next] * density[idx_next])
+  exp_lambda_density_pos <- exp(lambda[idx_next] * density[idx_next])
 
-    y[2 * i] <- delta_plus[i+1] * exp(-density[i + 1] / mu0[i + 1]) - delta_plus[i]
-    y[2 * i + 1] <- delta_minus[i+1] * exp(-density[i + 1] / mu0[i + 1]) - delta_minus[i]
-  }
+  exp_density_mu0_neg <- exp(-density[idx_next] / mu0[idx_next])
 
-  # Solving matrix equation
-  x <- solve(S, y)
+  # Populate the matrix S
+  S[cbind(idx_even, idx_odd)] <- gamma_plus[indices]
+  S[cbind(idx_even, idx_even)] <- gamma_minus[indices]
+  S[cbind(idx_even, idx_even + 1)] <- -gamma_plus[idx_next] * exp_lambda_density_neg
+  S[cbind(idx_even, idx_even + 2)] <- -gamma_minus[idx_next] * exp_lambda_density_pos
+
+  S[cbind(idx_even + 1, idx_odd)] <- gamma_minus[indices]
+  S[cbind(idx_even + 1, idx_even)] <- gamma_plus[indices]
+  S[cbind(idx_even + 1, idx_even + 1)] <- -gamma_minus[idx_next] * exp_lambda_density_neg
+  S[cbind(idx_even + 1, idx_even + 2)] <- -gamma_plus[idx_next] * exp_lambda_density_pos
+
+  # Populate the vector y
+  y[idx_even] <- delta_plus[idx_next] * exp_density_mu0_neg - delta_plus[indices]
+  y[idx_even + 1] <- delta_minus[idx_next] * exp_density_mu0_neg - delta_minus[indices]
+
+  # Solving matrix equation using arma::solve from C++
+  x <- solve_rtm(S, y)
 
   # Calculate diffuse radiative fluxes
   # Radiative fluxes refer to the rate of energy transfer by electromagnetic radiation through a surface or area,
   # typically measured in W/m², encompassing all or specific wavelengths (e.g., shortwave or longwave radiation).
   # These values are mainly of interest when modelling e.g. energy balance, heat fluxes...
   # Every down[k] and up[k] respectively refer to the downward and upward flux below layer k.
-  down <- numeric(n + 1)
-  up <- numeric(n + 1)
-  for (k in seq_len(n + 1)) {
-    k2 <- 2 * k
-    k2m1 <- k2 - 1
-    down[k] <- x[k2m1] * gamma_plus[k] * exp(-lambda[k]*density[k]) +
-      x[k2] * gamma_minus[k] * exp(lambda[k]*density[k]) +
-      delta_plus[k] * exp(-density[k]/mu0[k])
-    up[k] <- x[k2m1] * gamma_minus[k] * exp(-lambda[k]*density[k]) +
-      x[k2] * gamma_plus[k] * exp(lambda[k]*density[k]) +
-      delta_minus[k] * exp(-density[k]/mu0[k])
-  }
+  indices <- seq_len(n + 1)
+  k2 <- 2 * indices
+  k2m1 <- k2 - 1
+
+  down <- x[k2m1] * gamma_plus[indices] * exp(-lambda[indices]*density[indices]) +
+      x[k2] * gamma_minus[indices] * exp(lambda[indices]*density[indices]) +
+      delta_plus[indices] * exp(-density[indices]/mu0[indices])
+
+  up <- x[k2m1] * gamma_minus[indices] * exp(-lambda[indices]*density[indices]) +
+      x[k2] * gamma_plus[indices] * exp(lambda[indices]*density[indices]) +
+      delta_minus[indices] * exp(-density[indices]/mu0[indices])
 
   # Calculate light levels and netto absorbed or emitted radiation
   # Light levels refer to the intensity of photosynthetically active radiation (PAR, 400-700 nm) available for plants.
   # These values are mainly of interest when modelling e.g. photosyntheses, plant growth, schadow structure...
-  light_level <- numeric(n)
-  light_beam_level <- numeric(n)
-  light_diff_level <- numeric(n)
-  net_sw <- numeric(n)
-  for (k in seq_len(n)) {
-    kp1 <- k + 1
-    light_level[k] <- 0.5 * (down[k] + down[kp1] + direct_radiation[k] + direct_radiation[kp1])
-    light_beam_level[k] <- 0.5 * (direct_radiation[k] + direct_radiation[kp1])
-    light_diff_level[k] <- 0.5 * (down[k] + down[kp1])
-    net_sw[k] <- (down[kp1] - down[k]) + (up[k] - up[kp1]) + (direct_radiation[kp1] - direct_radiation[k] )
-  }
-  # There are no light levels for atmosphere
-  light_level[n+1] = NA
-  light_beam_level[n+1] = NA
-  light_diff_level[n+1] = NA
+  indices2 <- seq_len(n)
+  kp1 <- indices2 + 1
 
-  # Voeg de geabsorbeerde straling toe aan de output
+  light_level <- 0.5 * (down[indices2] + down[kp1] + direct_radiation[indices2] + direct_radiation[kp1])
+  light_beam_level <- 0.5 * (direct_radiation[indices2] + direct_radiation[kp1])
+  light_diff_level <- 0.5 * (down[indices2] + down[kp1])
+  net_sw <- (down[kp1] - down[indices2]) + (up[indices2] - up[kp1]) + (direct_radiation[kp1] - direct_radiation[indices2] )
+
+  # There are no light levels for atmosphere
+  light_level = c(light_level, NA)
+  light_beam_level = c(light_beam_level, NA)
+  light_diff_level = c(light_diff_level, NA)
+
   result <- data.frame(
     layer = c(paste("layer", 1:n), "atmosphere"),
     density = density,
     F_d_down = round(down, 0),
     F_d_up = round(up, 0),
     F_b_down = round(direct_radiation, 0),
-    net_sw = c(round(net_sw, 0), 0),  # No netto radiation in atmosphere
+    net_sw = c(round(net_sw, 0), 0),  # No net radiation in atmosphere (no structure here)
     albedo = c(rep(' ', n), round( up[length(up)]/(F_sky_diff + F_sky_dir), 3 ) )
   )
 
@@ -140,6 +142,9 @@ sw_two_stream <- function(soil_reflect, density,
 
 
 #' 2D (vertical & horizontal) shortwave two-stream RTM
+#'
+#' This function performs a two-directional (vertical & horizontal) shortwave
+#' two-stream RTM to estimate radiation fluxes in a forest voxel grid.
 #'
 #' @param datetime Datetime object representing the current simulation time
 #' @param lat Latitude of the location
@@ -159,7 +164,9 @@ sw_two_stream <- function(soil_reflect, density,
 #' @return Dataframe containing the combined results of the 2D shortwave RTM
 #' A lot of these parameters are global parameters and actually do not need to be stated as arguments.
 #' @importFrom suncalc getSunlightPosition
+#' @importFrom data.table as.data.table setorder
 #' @export
+
 
 shortwave_two_stream_RTM <- function(datetime, lat, lon, voxel_grid,
                                      F_sky_diff_init, F_sky_dir_init,
@@ -167,10 +174,12 @@ shortwave_two_stream_RTM <- function(datetime, lat, lon, voxel_grid,
                                      Kd_v, Kb_v, Kd_h, Kb_h,
                                      omega, betad, beta0) {
 
-  # Function to determine solar angles
+  voxel_grid <- data.table::as.data.table(voxel_grid)
+
+  # Calculate solar angles
   calculate_sun_angle <- function(datetime, lat, lon) {
     sun_angle <- suncalc::getSunlightPosition(date = datetime, lat = lat, lon = lon)
-    sun_altitude = sun_angle$altitude
+    sun_altitude <- sun_angle$altitude
     sun_azimuth <- sun_angle$azimuth
     # Is sun in eastern half?
     # This is 1 if azimuth is between 0 and -pi radians (direction along the horizon, measured from south to west).
@@ -188,127 +197,98 @@ shortwave_two_stream_RTM <- function(datetime, lat, lon, voxel_grid,
   # Vertical shortwave RTM #
   ##########################
 
-  # Radiative values
-  F_sky_diff_v = F_sky_diff_init
+  # Direct radiation from canopy top
+  F_sky_diff_v <- F_sky_diff_init
+  # Diffuse radiation from canopy top
   F_sky_dir_v <<- F_sky_dir_init * sun_angles$above_horizon
 
-  # Unique XY-combinations
-  xy_combinations <- unique(voxel_grid[, c("X", "Y")])
-
-  # Save results
-  results_list_v <- list()
-
-  # Iteration over unique XY-combinations
-  for (row in seq_len(nrow(xy_combinations))) {
-    xy <- xy_combinations[row, ]
-    x_pos <- xy$X
-    y_pos <- xy$Y
-
-    # Density values of current column
-    current_density <- voxel_grid$density[voxel_grid$X == x_pos & voxel_grid$Y == y_pos]
+  # Calculate fluxes per unique XY combination
+  final_results_vertical <- voxel_grid[, {
     # Number of layers
-    n = length(current_density)
+    n_layers <- .N
 
-    fluxes = sw_two_stream(soil_reflect = omega_g_v, density = current_density,
-                           F_sky_diff = F_sky_diff_v, F_sky_dir = F_sky_dir_v,
-                           Kd = Kd_v, Kb = Kb_v,
-                           omega = omega, beta = betad, beta0 = beta0)
-
-    # Save results without atmosphere layer
-    result <- data.frame(
-      X = rep(x_pos, n),  # Fill X for every layer
-      Y = rep(y_pos, n),  # Fill Y for every layer
-      Z = 1:n,
-      density = current_density,
-      F_d_down = fluxes$F_d_down[-(n+1)],
-      F_d_up = fluxes$F_d_up[-(n+1)],
-      F_b_down = fluxes$F_b_down[-(n+1)],
-      net_sw = fluxes$net_sw[-(n+1)]
+    fluxes <- sw_two_stream(
+      soil_reflect = omega_g_v, density = density,
+      F_sky_diff = F_sky_diff_v, F_sky_dir = F_sky_dir_v,
+      Kd = Kd_v, Kb = Kb_v,
+      omega = omega, beta = betad, beta0 = beta0
     )
 
-    results_list_v[[row]] <- result
-  }
+    .(X, Y, Z = seq_len(n_layers), density,
+      F_d_down = fluxes$F_d_down[1:n_layers],
+      F_d_up = fluxes$F_d_up[1:n_layers],
+      F_b_down = fluxes$F_b_down[1:n_layers],
+      net_sw = fluxes$net_sw[1:n_layers])
+  }, by = .(X, Y)]
 
-  # Combine all results
-  final_results_v <- do.call(rbind, results_list_v)
-  # Sort by X and Y
-  final_results_vertical <- final_results_v[order(final_results_v$X, final_results_v$Y), ]
+
+  data.table::setorder(final_results_vertical, X, Y, Z)
 
   ############################
   # Horizontal shortwave RTM #
   ############################
 
-  # Radiative values
-  F_sky_dir_h <<- round( F_sky_dir_init / sin(sun_angles$sun_altitude) *
-                         cos(sun_angles$sun_altitude) * abs(cos(sun_angles$sun_azimuth)) *
-                         sun_angles$above_horizon * sun_angles$in_eastern_half, 0)     # Direct radiation from eastern edge
-  F_sky_diff_h <- F_sky_diff_init/4                                 # Diffuse radiation from eastern edge
+  # Direct radiation from eastern edge
+  F_sky_dir_h <<- round(
+    F_sky_dir_init / sin(sun_angles$sun_altitude) *
+      cos(sun_angles$sun_altitude) * abs(cos(sun_angles$sun_azimuth)) *
+      sun_angles$above_horizon * sun_angles$in_eastern_half, 0
+  )
+  # Diffuse radiation from eastern edge
+  F_sky_diff_h <- F_sky_diff_init / 4
 
-  # Unique YZ-combinations
-  yz_combinations <- unique(voxel_grid[, c("Y", "Z")])
-
-  # Save results
-  results_list_h <- list()
-
-  # Iteration over unique YZ-combinations
-  for (row in seq_len(nrow(yz_combinations))) {
-    yz <- yz_combinations[row, ]
-    y_pos <- yz$Y
-    z_pos <- yz$Z
-
-    # Density values of current YZ column
-    current_density <- voxel_grid$density[voxel_grid$Y == y_pos & voxel_grid$Z == z_pos]
-
+  # Calculate fluxes per unique YZ combination
+  final_results_horizontal <- voxel_grid[, {
     # Number of layers
-    n = length(current_density)
+    n_layers <- .N
 
-    fluxes = sw_two_stream(soil_reflect = omega_g_h, density = current_density,
-                           F_sky_diff = F_sky_diff_h, F_sky_dir = F_sky_dir_h,
-                           Kd = Kd_h, Kb = Kb_h,
-                           omega = omega, beta = betad, beta0 = beta0)
-
-    # Save results without atmosphere layer
-    result <- data.frame(
-      Y = rep(y_pos, n),  # Fill Y for every layer
-      Z = rep(z_pos, n),  # Fill Z for every layer
-      X = 1:n,
-      density = current_density,
-      F_d_down = fluxes$F_d_down[-(n+1)],
-      F_d_up = fluxes$F_d_up[-(n+1)],
-      F_b_down = fluxes$F_b_down[-(n+1)],
-      net_sw = fluxes$net_sw[-(n+1)]
+    fluxes <- sw_two_stream(
+      soil_reflect = omega_g_h, density = density,
+      F_sky_diff = F_sky_diff_h, F_sky_dir = F_sky_dir_h,
+      Kd = Kd_h, Kb = Kb_h,
+      omega = omega, beta = betad, beta0 = beta0
     )
 
-    results_list_h[[row]] <- result
+    .(Y, Z, X = seq_len(n_layers), density,
+      F_d_down = fluxes$F_d_down[1:n_layers],
+      F_d_up = fluxes$F_d_up[1:n_layers],
+      F_b_down = fluxes$F_b_down[1:n_layers],
+      net_sw = fluxes$net_sw[1:n_layers])
+  }, by = .(Y, Z)]
 
-  }
-
-  # Combine all results
-  final_results_h <- do.call(rbind, results_list_h)
-  # Sort by Y en Z
-  final_results_horizontal <- final_results_h[order(final_results_h$Y, final_results_h$Z), ]
+  data.table::setorder(final_results_horizontal, Y, Z, X)
 
   #########################################
   # Combining both directions into 2D RTM #
   #########################################
 
-  # Make sure both dataframes have same order of rows
-  final_results_horizontal <- final_results_horizontal[order(final_results_horizontal$X, final_results_horizontal$Y, final_results_horizontal$Z), ]
-  final_results_vertical <- final_results_vertical[order(final_results_vertical$X, final_results_vertical$Y, final_results_vertical$Z), ]
-
-  # Calculate sum of corresponding columns and create new dataframe
-  final_results_2D <- data.frame(
-    X = final_results_horizontal$X,
-    Y = final_results_horizontal$Y,
-    Z = final_results_horizontal$Z,
-    density = final_results_horizontal$density,
-    F_d_down = final_results_horizontal$F_d_down + final_results_vertical$F_d_down,
-    F_d_up = final_results_horizontal$F_d_up + final_results_vertical$F_d_up,
-    F_b_down = final_results_horizontal$F_b_down + final_results_vertical$F_b_down,
-    net_sw = final_results_horizontal$net_sw + final_results_vertical$net_sw
+  final_results_2D <- merge(
+    final_results_horizontal[, .(X, Y, Z, density,
+                                 F_d_down_h = F_d_down,
+                                 F_d_up_h = F_d_up,
+                                 F_b_down_h = F_b_down,
+                                 net_sw_h = net_sw)],
+    final_results_vertical[, .(X, Y, Z, density,
+                               F_d_down_v = F_d_down,
+                               F_d_up_v = F_d_up,
+                               F_b_down_v = F_b_down,
+                               net_sw_v = net_sw)],
+    by = c("X", "Y", "Z", "density"),
+    all = TRUE
   )
 
-  return(final_results_2D)
+  # Sum fluxes
+  final_results_2D[, `:=`(
+    F_d_down = F_d_down_h + F_d_down_v,
+    F_d_up = F_d_up_h + F_d_up_v,
+    F_b_down = F_b_down_h + F_b_down_v,
+    net_sw = net_sw_h + net_sw_v
+  )]
 
+  # Select relevant columns
+  final_results_2D <- final_results_2D[, .(X, Y, Z, density, F_d_down, F_d_up, F_b_down, net_sw)]
+
+  return(final_results_2D)
 }
+
 

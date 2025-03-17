@@ -1,3 +1,7 @@
 .Rproj.user
 .Rhistory
 Data/
+Output/
+testing_foredgeclim.R
+Issues ForEdgeClim.txt
+fast_load.R

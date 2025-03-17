@@ -27,6 +27,7 @@ sin_lag <- function(datetime) {
 #' @export
 #'
 # G is positive if E is entering the soil
+# More dense voxels lose less heat to ground
 calculate_G <- function(net_rad_ground){
   G = p_ground*(1-den)*net_rad_ground
   return(G)

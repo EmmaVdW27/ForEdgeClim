@@ -2,7 +2,7 @@
 % Please edit documentation in R/RTM_LW.R
 \name{longwave_two_stream_RTM}
 \alias{longwave_two_stream_RTM}
-\title{2D Longwave Two-Stream Radiative Transfer Model (RTM)}
+\title{2D (vertical & horizontal) longwave two-stream RTM}
 \usage{
 longwave_two_stream_RTM(
   voxel_grid,
