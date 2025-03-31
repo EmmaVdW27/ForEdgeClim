@@ -33,9 +33,6 @@ run_foredgeclim <- function(structure_grid) {
                            Kd_v, Kb_v, Kd_h, Kb_h,
                            omega, betad, beta0) # A lot of these parameters are global parameters and actually do not need to be stated as arguments.
   # saveRDS(final_results_2D, 'Output/SW_DATA.rds')
-  # final_results_2D = readRDS('Output/SW_DATA.rds')
-  # F_sky_dir_v <<- 600
-  # F_sky_dir_h <<- 281
 
   den <<- final_results_2D$density
   net_SW <- final_results_2D$net_sw
@@ -55,9 +52,6 @@ run_foredgeclim <- function(structure_grid) {
   #############################
 
   print('Init temp 🌡️')
-
-  # Temperature difference between ground and macro temperature
-  TG_diff = sin_lag(datetime)
 
   # First longwave RTM for initialising temperatures
   micro_grid <- data.frame(
@@ -81,9 +75,9 @@ run_foredgeclim <- function(structure_grid) {
   # Define ground flux as a % of net rad at ground
   G = calculate_G(net_rad_ground)
 
-  # Define T_soil from ground flux with ground conductance/convection g_soil
+  # Define T_soil from ground flux with ground conductance/convection k_soil
   T_air_vec = macro_temp # very first guess on air temp
-  micro_grid$T_soil = G/g_soil + T_air_vec - TG_diff
+  micro_grid$T_soil = T_soil_deep + G*stable_soil_depth/k_soil
 
   # Define micro_grid$temperature based on macro temp and initial net radiation + random noise
   micro_grid$temperature =  macro_temp + 0.01*net_radiation_init + rnorm(nrow(micro_grid), mean = 0, sd = 0.1)
@@ -97,15 +91,17 @@ run_foredgeclim <- function(structure_grid) {
 
   # Define T_ground for every voxel in a vertical xy-column as T_soil
   micro_grid <- micro_grid |>
-    dplyr::group_by(x, y) |>
-    dplyr::mutate(T_ground = T_soil[z == 1][1]) |>
-    dplyr::ungroup()
+    group_by(x, y) |>
+    mutate(T_ground = T_soil[z == 1][1]) |>
+    ungroup()
 
   # Determine weights for each component in the linearisation via exponential weighting
   x_threshold = length_transect # x-value from where macro influence is being felt, ie, forest edge value
   z_threshold = height_canopy  # z-value from where macro influence is being felt, ie, canopy top value
-  dis_macro_x = ifelse(x_coords > x_threshold, 0, x_threshold - x_coords + 1)
-  dis_macro_z = ifelse(z_coords > z_threshold, 0, z_threshold - z_coords + 1)
+  # dis_macro_x = ifelse(x_coords > x_threshold, 0, x_threshold - x_coords + 1)
+  # dis_macro_z = ifelse(z_coords > z_threshold, 0, z_threshold - z_coords + 1)
+  dis_macro_x = x_dim - x_coords + 1
+  dis_macro_z = z_dim - z_coords + 1
   dis_soil = z_coords
   dis_forest = 0.5 # size of a voxel edge = 1m, so distance from structure is on average 0.5m
   alpha_macro = log(0.5) / infl_macro
@@ -164,11 +160,11 @@ run_foredgeclim <- function(structure_grid) {
 
     # G is positive if E is entering the soil
     G = calculate_G(net_rad_ground)
-    micro_grid$T_soil = G/g_soil + T_air_vec - TG_diff
+    micro_grid$T_soil = T_soil_deep + G*stable_soil_depth/k_soil
     micro_grid <- micro_grid |>
-      dplyr::group_by(x, y) |>
-      dplyr::mutate(T_ground = T_soil[z == 1][1]) |>
-      dplyr::ungroup()
+      group_by(x, y) |>
+      mutate(T_ground = T_soil[z == 1][1]) |>
+      ungroup()
 
 
     ##############################
@@ -226,17 +222,17 @@ run_foredgeclim <- function(structure_grid) {
 
     # Determine planes-averaged surface temperature (to be used in T_air_Vec update for zero-density voxels).
     micro_grid <- micro_grid |>
-      dplyr::group_by(z) |>
-      dplyr::mutate(mean_temp_z = mean(temperature[den>0], na.rm = TRUE)) |>
-      dplyr::ungroup()
+      group_by(z) |>
+      mutate(mean_temp_z = mean(temperature[den>0], na.rm = TRUE)) |>
+      ungroup()
     micro_grid <- micro_grid |>
-      dplyr::group_by(y) |>
-      dplyr::mutate(mean_temp_y = mean(temperature[den>0], na.rm = TRUE)) |>
-      dplyr::ungroup()
+      group_by(y) |>
+      mutate(mean_temp_y = mean(temperature[den>0], na.rm = TRUE)) |>
+      ungroup()
     micro_grid <- micro_grid |>
-      dplyr::group_by(x) |>
-      dplyr::mutate(mean_temp_x = mean(temperature[den>0], na.rm = TRUE)) |>
-      dplyr::ungroup()
+      group_by(x) |>
+      mutate(mean_temp_x = mean(temperature[den>0], na.rm = TRUE)) |>
+      ungroup()
     micro_grid$mean_temp = (micro_grid$mean_temp_x + micro_grid$mean_temp_y + micro_grid$mean_temp_z)/3
 
     # Air temperature update based on a linearisation as is done in microclimc (Maclean & Klinges, 2021)

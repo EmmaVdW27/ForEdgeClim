@@ -23,7 +23,7 @@ generate_fictive_grid <- function(season) {
 
   # Create an empty voxel grid with density set to 0
   voxel_grid <- expand.grid(X = 1:x_dim, Y = 1:y_dim, Z = 1:z_dim) |>
-    dplyr::mutate(density = 0)
+    mutate(density = 0)
 
   # Function to add a single tree or shrub
   add_single_tree <- function(grid, x_pos, y_pos, trunk_height, canopy_max, season, is_shrub = FALSE) {
@@ -31,7 +31,7 @@ generate_fictive_grid <- function(season) {
       # Add trunk
       canopy_min <- trunk_height
       grid <- grid |>
-        dplyr::mutate(
+        mutate(
           distance_from_trunk = sqrt((X - x_pos)^2 + (Y - y_pos)^2),
           density = ifelse(distance_from_trunk < 1 & Z < trunk_height, runif(nrow(grid), min = 0.8, max = 1), density)
         )
@@ -56,7 +56,7 @@ generate_fictive_grid <- function(season) {
     # Add canopy leaves
     horizontal_radius <- ifelse(is_shrub, 4, 5)
     grid <- grid |>
-      dplyr::mutate(
+      mutate(
         horizontal_distance = sqrt((X - x_pos)^2 + (Y - y_pos)^2),
         random_fringe_factor = runif(nrow(grid)),
         density = ifelse(horizontal_distance < horizontal_radius & random_fringe_factor > 0.8 & Z >= canopy_min & Z <= canopy_max,
@@ -83,7 +83,7 @@ generate_fictive_grid <- function(season) {
       trunk_height = sample(5:15, 20, replace = TRUE),
       canopy_max = sample(20:30, 20, replace = TRUE)
     )
-    tree_positions <- dplyr::bind_rows(tree_positions, edge_trees)
+    tree_positions <- bind_rows(tree_positions, edge_trees)
   }
 
   for (i in 1:nrow(tree_positions)) {

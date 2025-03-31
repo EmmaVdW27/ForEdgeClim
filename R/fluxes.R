@@ -1,25 +1,3 @@
-#' Sinus for near-surface air temperature: time lagged wrt macro air temperature
-#'
-#' @param datetime Datetime object representing the current simulation time
-#' @return TG_diff Lagging temperature correction to determine soil temperature
-#' @export
-#'
-sin_lag <- function(datetime) {
-  t_now <- format(datetime, "%H")
-  t_now <- as.numeric(t_now)
-  lag_hours <- 6  # Hours of lagging
-
-  TG_mean <- (macro_temp_max + macro_temp_min) / 2 # mean near-surface temp
-  A <- (macro_temp_max - macro_temp_min) / 2 # amplitude of sinus
-  T <- 24  # Period of 1 day
-
-  # Macro air temp on current time point and near-surface temperature via lagging of macro temperature
-  TG_now <- TG_mean + A * cos((2 * pi / T) * (t_now - t_max))
-  TG_lagged <- TG_mean + A * cos((2 * pi / T) * (t_now - lag_hours - t_max))
-  TG_diff <- TG_now - TG_lagged
-  return(TG_diff)
-}
-
 #' Function to calculate ground heat flux G
 #'
 #' @param net_rad_ground Net radiation at ground surface

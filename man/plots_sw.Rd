@@ -4,10 +4,12 @@
 \alias{plots_sw}
 \title{Function to create several shortwave radiation plots}
 \usage{
-plots_sw(sw_rad_2D)
+plots_sw(sw_rad_2D, output_path)
 }
 \arguments{
 \item{sw_rad_2D}{Dataframe with shortwave radiative values}
+
+\item{output_path}{The output_path to store the plots}
 }
 \value{
 Several radiation plots (plotted and saved)

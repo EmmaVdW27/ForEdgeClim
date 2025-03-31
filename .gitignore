@@ -1,7 +1,12 @@
 .Rproj.user
 .Rhistory
-Data/
-Output/
+Data_to_ignore/
+Data/2023-06-16_ForSe_Gontrode_5cm_transect_emma.las
+Data/2023-07-10_ForSe_Gontrode_5cm_transect_emma.las
+Data/DTS_unfiltered/*
+!Data/DTS_unfiltered/2023-07-08_hourly.csv
+Output/*
+!Output/2023-07-08_12/
 testing_foredgeclim.R
 Issues ForEdgeClim.txt
 fast_load.R

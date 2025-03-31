@@ -4,13 +4,10 @@
 \alias{generate_DTM_grid_TLS}
 \title{Generate a voxelised point density grid from a LAS file}
 \usage{
-generate_DTM_grid_TLS(
-  las_file = "Data/June_2023_Gontrode_forest.las",
-  voxel_size = 1
-)
+generate_DTM_grid_TLS(las_file, voxel_size = 1)
 }
 \arguments{
-\item{las_file}{Path to the LAS file (default = 'Data/June_2023_Gontrode_forest.las')}
+\item{las_file}{Path to the LAS file}
 
 \item{voxel_size}{Numeric value defining the voxel size (default = 1m).}
 }

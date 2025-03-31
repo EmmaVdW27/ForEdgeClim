@@ -174,11 +174,11 @@ shortwave_two_stream_RTM <- function(datetime, lat, lon, voxel_grid,
                                      Kd_v, Kb_v, Kd_h, Kb_h,
                                      omega, betad, beta0) {
 
-  voxel_grid <- data.table::as.data.table(voxel_grid)
+  voxel_grid <- as.data.table(voxel_grid)
 
   # Calculate solar angles
   calculate_sun_angle <- function(datetime, lat, lon) {
-    sun_angle <- suncalc::getSunlightPosition(date = datetime, lat = lat, lon = lon)
+    sun_angle <- getSunlightPosition(date = datetime, lat = lat, lon = lon)
     sun_altitude <- sun_angle$altitude
     sun_azimuth <- sun_angle$azimuth
     # Is sun in eastern half?
@@ -197,9 +197,9 @@ shortwave_two_stream_RTM <- function(datetime, lat, lon, voxel_grid,
   # Vertical shortwave RTM #
   ##########################
 
-  # Direct radiation from canopy top
-  F_sky_diff_v <- F_sky_diff_init
   # Diffuse radiation from canopy top
+  F_sky_diff_v <- F_sky_diff_init
+  # Direct radiation from canopy top
   F_sky_dir_v <<- F_sky_dir_init * sun_angles$above_horizon
 
   # Calculate fluxes per unique XY combination
@@ -222,7 +222,7 @@ shortwave_two_stream_RTM <- function(datetime, lat, lon, voxel_grid,
   }, by = .(X, Y)]
 
 
-  data.table::setorder(final_results_vertical, X, Y, Z)
+  setorder(final_results_vertical, X, Y, Z)
 
   ############################
   # Horizontal shortwave RTM #
@@ -235,7 +235,7 @@ shortwave_two_stream_RTM <- function(datetime, lat, lon, voxel_grid,
       sun_angles$above_horizon * sun_angles$in_eastern_half, 0
   )
   # Diffuse radiation from eastern edge
-  F_sky_diff_h <- F_sky_diff_init / 4
+  F_sky_diff_h <- F_sky_diff_init
 
   # Calculate fluxes per unique YZ combination
   final_results_horizontal <- voxel_grid[, {
@@ -256,7 +256,7 @@ shortwave_two_stream_RTM <- function(datetime, lat, lon, voxel_grid,
       net_sw = fluxes$net_sw[1:n_layers])
   }, by = .(Y, Z)]
 
-  data.table::setorder(final_results_horizontal, Y, Z, X)
+  setorder(final_results_horizontal, Y, Z, X)
 
   #########################################
   # Combining both directions into 2D RTM #

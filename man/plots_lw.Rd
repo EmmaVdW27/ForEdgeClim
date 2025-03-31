@@ -4,9 +4,11 @@
 \alias{plots_lw}
 \title{Function to create several longwave radiation plots}
 \usage{
-plots_lw(lw_rad_2D)
+plots_lw(lw_rad_2D, output_path)
 }
 \arguments{
+\item{output_path}{The output_path to store the plots}
+
 \item{sw_rad_2D}{Dataframe with shortwave radiative values}
 }
 \value{

@@ -4,10 +4,10 @@
 \alias{create_input_data}
 \title{Generate standard input data for ForEdgeClim}
 \usage{
-create_input_data(summer_day = TRUE)
+create_input_data(datetime)
 }
 \arguments{
-\item{summer_day}{Logical value: TRUE for day, FALSE for night}
+\item{datetime}{POSIXct object}
 }
 \value{
 global variables and parameters

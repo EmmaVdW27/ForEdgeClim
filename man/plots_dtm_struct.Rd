@@ -4,9 +4,11 @@
 \alias{plots_dtm_struct}
 \title{Function to create plot of DTM and density structure}
 \usage{
-plots_dtm_struct(dtm, grid)
+plots_dtm_struct(dtm, grid, output_path)
 }
 \arguments{
+\item{output_path}{The output_path to store the plots}
+
 \item{sw_rad_2D}{Dataframe with shortwave radiative values}
 }
 \value{

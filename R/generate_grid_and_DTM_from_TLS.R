@@ -8,48 +8,53 @@
 #' Additionally, a 3D plot of the voxel grid is generated and saved as a PNG file in
 #' the "Output" directory.
 #'
-#' @param las_file Path to the LAS file (default = 'Data/June_2023_Gontrode_forest.las')
+#' @param las_file Path to the LAS file
 #' @param voxel_size Numeric value defining the voxel size (default = 1m).
 #' @return A data.table with columns: X, Y, Z, and density.
 #' @importFrom dplyr group_by summarise
 #' @import ggplot2
-#' @importFrom lidR readLAS classify_ground rasterize_terrain filter_poi voxel_metrics csf knnidw
+#' @importFrom lidR readLAS classify_ground rasterize_terrain filter_poi voxel_metrics csf knnidw normalize_height
 #' @importFrom data.table as.data.table setnames CJ
 #' @export
-generate_DTM_grid_TLS <- function(las_file = 'Data/June_2023_Gontrode_forest.las', voxel_size = 1) {
+generate_DTM_grid_TLS <- function(las_file, voxel_size = 1) {
 
   start = Sys.time()
 
   # Read the LAS file
-  las <- lidR::readLAS(las_file)
+  # Voxel density (voxel point cloud value) was determined via octree filtering in RiSCAN:
+  # Laser beam divergence of RIEGL VZ-400i = 0.02°, at 38m distance (~height canopy), this translates
+  # into a distance error of 0.0256m: tan(0.02°) = (x/2)/38m => x = 0.0256m
+  # Because of this, a 5cm downsampling should do to correct for distance to scan positions.
+  # Remark that this does not correct for occlusion (nor for the very dense ground layer).
+  las <- readLAS(las_file)
 
   #######
   # DTM #
   #######
 
   # Use a filter to retain only the ground points (create DTM)
-  dtm <- lidR::classify_ground(las, csf())
+  dtm <- classify_ground(las, csf())
   # Create a raster model of the ground (DTM)
-  dtm_raster <- lidR::rasterize_terrain(dtm, res = 1, algorithm = knnidw(k=10L))
+  dtm_raster <- rasterize_terrain(dtm, res = 1, algorithm = knnidw(k=10L))
   # Convert the raster to a dataframe
   dtm_df <- as.data.frame(dtm_raster, xy = TRUE)
   colnames(dtm_df) <- c("X", "Y", "Z")
 
   # Normalize height of the LAS file (everywhere set ground level to Z = 0)
-  las <- lidR::normalize_height(las, dtm_raster)
+  las <- normalize_height(las, dtm_raster)
   # Remove the points below ground level (for points that were e.g. wrongly not classified as ground points)
-  las <- lidR::filter_poi(las, Z >= 0)
+  las <- filter_poi(las, Z >= 0)
 
   ###################
   # STRUCTURAL GRID #
   ###################
 
   # Compute the 3D voxel grid with point count per voxel
-  voxels <- lidR::voxel_metrics(las, ~length(Z), res = voxel_size)
+  voxels <- voxel_metrics(las, ~length(Z), res = voxel_size)
 
   # Convert to a data.table and rename columns
-  voxel_grid <- data.table::as.data.table(voxels)
-  data.table::setnames(voxel_grid, c("X", "Y", "Z", "n"))
+  voxel_grid <- as.data.table(voxels)
+  setnames(voxel_grid, c("X", "Y", "Z", "n"))
 
   # Remove voxels on min and max X & Y boundaries
   voxel_grid <- voxel_grid[voxel_grid$X > min(voxel_grid$X) & voxel_grid$X < max(voxel_grid$X), ]
@@ -61,7 +66,7 @@ generate_DTM_grid_TLS <- function(las_file = 'Data/June_2023_Gontrode_forest.las
   voxel_grid$Z <- voxel_grid$Z - min(voxel_grid$Z, na.rm = TRUE) + 1
 
   # Fill missing voxels with density = 0
-  full_grid <- data.table::CJ(
+  full_grid <- CJ(
     X = seq(min(voxel_grid$X), max(voxel_grid$X), by = voxel_size),
     Y = seq(min(voxel_grid$Y), max(voxel_grid$Y), by = voxel_size),
     Z = seq(min(voxel_grid$Z), max(voxel_grid$Z), by = voxel_size)
@@ -77,6 +82,7 @@ generate_DTM_grid_TLS <- function(las_file = 'Data/June_2023_Gontrode_forest.las
   # The factor 0.5 determine how strong higher layers get more weight. 0.5 seems reasonable for a temperate forest.
   scaling <- log1p(full_grid$n) * exp(0.5*full_grid$Z/max(full_grid$Z))
   full_grid$density <- scaling/max(scaling)
+
 
   finish = Sys.time()
   print(paste0('Time to create DTM and structural grid from TLS data = ', round(as.numeric(finish - start, units = "secs"), 2), ' s'))

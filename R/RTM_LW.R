@@ -156,11 +156,11 @@ longwave_two_stream_RTM <- function(voxel_grid, micro_grid, lw_two_stream,
                                     F_sky_lw, omega_g_lw_v, omega_g_lw_h, macro_temp,
                                     Kd_lw_v, Kd_lw_h, omega_lw, beta_lw) {
 
-  voxel_grid <- data.table::as.data.table(voxel_grid)
-  micro_grid <- data.table::as.data.table(micro_grid)
+  voxel_grid <- as.data.table(voxel_grid)
+  micro_grid <- as.data.table(micro_grid)
 
   # Set coordinate names of micro_grid similar to the ones of voxel_grid
-  data.table::setnames(micro_grid, old = c("x", "y", "z"), new = c("X", "Y", "Z"))
+  setnames(micro_grid, old = c("x", "y", "z"), new = c("X", "Y", "Z"))
 
   # Merge voxel_grid and micro_grid and filter T_soil
   micro_grid <- micro_grid[, .(X, Y, Z, temperature, T_soil = ifelse(Z == 1, T_soil, NA))]
@@ -193,7 +193,7 @@ longwave_two_stream_RTM <- function(voxel_grid, micro_grid, lw_two_stream,
   }, by = .(X, Y)]
 
 
-  data.table::setorder(final_results_lw_vertical, X, Y, Z)
+  setorder(final_results_lw_vertical, X, Y, Z)
 
   ############################
   # Horizontal longwave RTM  #
@@ -206,7 +206,7 @@ longwave_two_stream_RTM <- function(voxel_grid, micro_grid, lw_two_stream,
     n_layers <- .N
 
     fluxes <- lw_two_stream(
-      soil_reflect = omega_g_lw_h, density = density, F_sky_lw = F_sky_lw / 4,
+      soil_reflect = omega_g_lw_h, density = density, F_sky_lw = F_sky_lw,
       temperature = temperature, T_soil = 0, T_macro = macro_temp,
       Kd = Kd_lw_h, omega = omega_lw, beta = beta_lw
     )
@@ -217,7 +217,7 @@ longwave_two_stream_RTM <- function(voxel_grid, micro_grid, lw_two_stream,
       net_lw = fluxes$net_lw[1:n_layers])
   }, by = .(Y, Z)]
 
-  data.table::setorder(final_results_lw_horizontal, X, Y, Z)
+  setorder(final_results_lw_horizontal, X, Y, Z)
 
   #########################################
   # Combining both directions into 2D RTM #
