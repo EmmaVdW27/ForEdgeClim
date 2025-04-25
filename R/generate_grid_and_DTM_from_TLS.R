@@ -14,7 +14,7 @@
 #' @importFrom dplyr group_by summarise
 #' @import ggplot2
 #' @importFrom lidR readLAS classify_ground rasterize_terrain filter_poi voxel_metrics csf knnidw normalize_height
-#' @importFrom data.table as.data.table setnames CJ
+#' @importFrom data.table as.data.table setnames CJ uniqueN
 #' @export
 generate_DTM_grid_TLS <- function(las_file, voxel_size = 1) {
 
@@ -74,7 +74,6 @@ generate_DTM_grid_TLS <- function(las_file, voxel_size = 1) {
   full_grid <- merge(full_grid, voxel_grid, by = c("X", "Y", "Z"), all.x = TRUE)
   full_grid[is.na(n), n := 0]  # Replace NA with 0 for voxels without points
 
-
   # Normalize the density values
   # Log transformation: Reduces dominance of high-density areas (mainly ground level) (necessary even after downsampling*) -> make distribution less extreme
   # * downsampling is done with the RiSCAN octree filter previous to the import of the las file
@@ -82,7 +81,6 @@ generate_DTM_grid_TLS <- function(las_file, voxel_size = 1) {
   # The factor 0.5 determine how strong higher layers get more weight. 0.5 seems reasonable for a temperate forest.
   scaling <- log1p(full_grid$n) * exp(0.5*full_grid$Z/max(full_grid$Z))
   full_grid$density <- scaling/max(scaling)
-
 
   finish = Sys.time()
   print(paste0('Time to create DTM and structural grid from TLS data = ', round(as.numeric(finish - start, units = "secs"), 2), ' s'))

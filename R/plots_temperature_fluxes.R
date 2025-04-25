@@ -7,6 +7,7 @@
 #' @importFrom dplyr filter group_by summarise
 #' @importFrom scales rescale
 #' @import ggplot2
+#' @importFrom ggtext element_markdown
 #' @export
 #'
 plots_temp <- function(micro_grid, T_air_vec, output_path){
@@ -127,26 +128,140 @@ plots_temp <- function(micro_grid, T_air_vec, output_path){
 
   # Modelled air temperature at DTS position
   reqhgt <- temp_air_grid |>
-    filter(z == 1, y == 15, x <= length_transect)
+    filter(z == req_height, y == 15, x <= length_transect)
 
   # DTS observations
   DTS <- read.csv("Data/DTS_filtered_distance_temp.csv")
 
+  # TOMST observations
+  TOMST <- read.csv("Data/TOMST_filtered_distance_temp.csv")
+
   # Add dataset lable
   reqhgt$model <- "Modelled (every 1m)"
   DTS$model <- "DTS observations (every 0.25m)"
+  TOMST$model <- "TOMST observations (every 15m)"
 
   # 1D graph:
   Temp_height <- ggplot() +
     geom_line(data = reqhgt, aes(x = x, y = temperature, color = "Modelled (every 1m)")) +
     geom_line(data = DTS, aes(x = distance, y = temp, color = "DTS observations (every 0.25m)")) +
+    geom_point(data = TOMST, aes(x = 135 - D_edge, y = Tair, color = "TOMST observations (every 15m)")) +
+    geom_line(data = TOMST, aes(x = 135 - D_edge, y = Tair, color = "TOMST observations (every 15m)")) +
     labs(
       title = "Air temperature at 1m height from forest core to edge",
       x = "Distance (m)",
       y = "Temperature (°C)",
       caption = caption) +
     scale_color_manual(
-      values = c("Modelled (every 1m)" = "cornflowerblue", "DTS observations (every 0.25m)" = "red")
+      values = c("Modelled (every 1m)" = "cornflowerblue", "DTS observations (every 0.25m)" = "red", "TOMST observations (every 15m)" = "darkgreen")
+    ) +
+    theme_bw() +
+    theme(
+      legend.position = "top",
+      legend.title = element_blank(),
+      plot.caption = element_text(hjust = 0, color = "black"),
+      # as‑titels
+      axis.title.x   = element_text(size = 18, face = "bold"),
+      axis.title.y   = element_text(size = 18, face = "bold"),
+      # tick‑labels
+      axis.text.x    = element_text(size = 18),
+      axis.text.y = element_markdown(size = 18)
+    )
+
+  print(Temp_height)
+
+  ggsave(paste0(output_path, '/temp_air_reqhgt.png'), plot = Temp_height, width = 10, height = 6, dpi = 300)
+
+  # 1D graph with only TOMST observations to compaire with:
+  Temp_height_TOMST <- ggplot() +
+    geom_line(data = reqhgt, aes(x = x, y = temperature, color = "Modelled (every 1m)")) +
+    geom_point(data = TOMST, aes(x = 135 - D_edge, y = Tair, color = "TOMST observations (every 15m)")) +
+    geom_line(data = TOMST, aes(x = 135 - D_edge, y = Tair, color = "TOMST observations (every 15m)")) +
+    labs(
+      x = "Distance (m)",
+      y = "Temperature (°C)",
+      ) +
+    scale_color_manual(
+      values = c("Modelled (every 1m)" = "cornflowerblue", "TOMST observations (every 15m)" = "darkgreen")
+    ) +
+    theme_bw() +
+    theme(
+      legend.position = "top",
+      legend.title = element_blank(),
+      legend.text  = element_text(size = 18),
+      # as‑titels
+      axis.title.x   = element_text(size = 18, face = "bold"),
+      axis.title.y   = element_text(size = 18, face = "bold"),
+      # tick‑labels
+      axis.text.x    = element_text(size = 18),
+      axis.text.y = element_markdown(size = 18)
+    ) +
+    coord_cartesian(ylim = c(17, 31))
+
+  print(Temp_height_TOMST)
+
+  ggsave(paste0(output_path, '/temp_air_reqhgt_TOMST.png'), plot = Temp_height_TOMST, width = 10, height = 6, dpi = 300)
+
+
+
+
+}
+
+
+
+
+
+#' Function to create radiation flux plot at 1m height
+#'
+#' @param micro_grid Grid with micro variables
+#' @param net_radiaiton Vector with net radiation
+#' @param output_path The output_path to store the plots
+#' @return flux plot at 1m height of model output vs PAR sensors
+#' @importFrom dplyr filter group_by summarise
+#' @importFrom scales rescale
+#' @import ggplot2
+#' @export
+#'
+plot_rad <- function(micro_grid, down_radiation, output_path){
+  rad_grid = micro_grid
+  rad_grid$down_radiation = down_radiation
+
+  # Modelled net radiation at PAR sensor positions
+  reqhgt_rad <- rad_grid |>
+    filter(z == req_height, y == 15, x <= length_transect)
+
+  # PAR observations
+  PAR <- read.csv("Data/PAR_filtered_distance_rad.csv")
+
+  # Caption to be plotted below the plots
+  caption = substitute(
+    atop(
+      "Macrotemperature = "*T*"°C | Date-time = "*DT*" h UTC",
+      "Direct radiation vertical = "*V*" W/m"^2*
+        " | Direct radiation horizontal = "*H*" W/m"^2*
+        " | Diffuse radiation = "*D*" W/m"^2
+    ),
+    list(
+      T = round(macro_temp, 2) - 273.15,
+      DT = format(datetime, "%Y-%m-%d %H"),
+      V = round(F_sky_dir_v, 2),
+      H = round(F_sky_dir_h, 2),
+      D = round(F_sky_diff_init, 2)
+    )
+  )
+
+  # 1D graph:
+  rad_height <- ggplot() +
+    geom_line(data = reqhgt_rad, aes(x = x, y = down_radiation, color = "Modelled (every 1m)")) +
+    geom_point(data = PAR, aes(x = distance, y = rad, color = "PAR observations (every 15m)")) +
+    geom_line(data = PAR, aes(x = distance, y = rad, color = "PAR observations (every 15m)")) +
+    labs(
+      title = "Downward radiation at 1m height from forest core to edge",
+      x = "Distance (m)",
+      y = "Radiation (W/m2)",
+      caption = caption) +
+    scale_color_manual(
+      values = c("Modelled (every 1m)" = "cornflowerblue", "PAR observations (every 15m)" = "red")
     ) +
     theme_bw() +
     theme(
@@ -155,12 +270,11 @@ plots_temp <- function(micro_grid, T_air_vec, output_path){
       plot.caption = element_text(hjust = 0, color = "black")
     )
 
-  print(Temp_height)
+  print(rad_height)
 
-  ggsave(paste0(output_path, '/temp_air_reqhgt.png'), plot = Temp_height, width = 10, height = 6, dpi = 300)
-
-
+  ggsave(paste0(output_path, '/rad_reqhgt.png'), plot = rad_height, width = 10, height = 6, dpi = 300)
 }
+
 
 
 #' Function to create several flux plots
@@ -181,7 +295,6 @@ plots_flux <- function(micro_grid, net_radiation, sensible_flux, latent_flux, G,
 
   # Define grid with fluxes
   fluxes_grid = micro_grid
-  # Convert surface temperature values from Kelvin to degrees Celsius
   fluxes_grid$net_radiation = net_radiation
   fluxes_grid$sensible_flux = sensible_flux
   fluxes_grid$latent_flux = latent_flux
@@ -221,9 +334,9 @@ plots_flux <- function(micro_grid, net_radiation, sensible_flux, latent_flux, G,
       colors = colors,
       values = rescale(c(0.25, 0.5, 0.75, 1)),
       guide = guide_colorbar(barwidth = 1, barheight = 10, frame.colour = "black", ticks.colour = "black")) +
-    labs(title = paste("Netto radiation, averaged across Y-slices"),
+    labs(title = paste("Net radiation, averaged across Y-slices"),
                   subtitle = "+ value ⮕ flux entering surface",
-                  x = "X (m)", y = "Z (m)", fill = "Rn (W/m2)",
+                  x = "X (m)", y = "Z (m)", fill = "Rₙ (W/m²)",
                   caption = caption)+
     coord_fixed(ratio = 1) +
     theme_bw() +
@@ -250,7 +363,7 @@ plots_flux <- function(micro_grid, net_radiation, sensible_flux, latent_flux, G,
       guide = guide_colorbar(barwidth = 1, barheight = 10, frame.colour = "black", ticks.colour = "black")) +
     labs(title = paste("Sensible heat surface flux, averaged across Y-slices"),
                   subtitle = "+ value ⮕ flux lost to air",
-                  x = "X (m)", y = "Z (m)", fill = "H (W/m2)",
+                  x = "X (m)", y = "Z (m)", fill = "H (W/m²)",
                   caption = caption)+
     coord_fixed(ratio = 1) +
     theme_bw() +
@@ -277,7 +390,7 @@ plots_flux <- function(micro_grid, net_radiation, sensible_flux, latent_flux, G,
       guide = guide_colorbar(barwidth = 1, barheight = 10, frame.colour = "black", ticks.colour = "black")) +
     labs(title = paste("Latent heat surface flux, averaged across Y-slices"),
                   subtitle = "+ value ⮕ flux lost to air",
-                  x = "X (m)", y = "Z (m)", fill = "LE (W/m2)",
+                  x = "X (m)", y = "Z (m)", fill = "LE (W/m²)",
                   caption = caption)+
     coord_fixed(ratio = 1) +
     theme_bw() +
@@ -304,7 +417,7 @@ plots_flux <- function(micro_grid, net_radiation, sensible_flux, latent_flux, G,
       guide = guide_colorbar(barwidth = 1, barheight = 10, frame.colour = "black", ticks.colour = "black")) +
     labs(title = paste("Ground heat flux, averaged across Y-slices"),
                   subtitle = "+ value ⮕ flux entering soil",
-                  x = "X (m)", y = "Z (m)", fill = "G (W/m2)",
+                  x = "X (m)", y = "Z (m)", fill = "G (W/m²)",
                   caption = caption)+
     coord_fixed(ratio = 1) +
     theme_bw() +

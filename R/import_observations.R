@@ -8,7 +8,7 @@ import_DTS_observations <- function(){
 
   DTS_data <- DTS_input_file
 
-  # DTS data is collected in CET
+  # DTS data is collected in CET = UTC+1
   DTS_data$datetime_brussels <- ymd_hms(paste(DTS_data$date, DTS_data$hour, "00", "00"), tz = "CET")
 
   # Convert to UTC
@@ -50,9 +50,9 @@ import_RMI_observations <- function(){
   # Extract hour of interest
   RMI_hour <- RMI_data[RMI_data$timestamp == datetime, ]
 
-  # macro_temp <<- RMI_hour$temp + 273.15 # in Kelvin
-  #
-  # F_sky_lw <<- e_atm*sigma_SB*macro_temp^4 # in W/m2
+  macro_temp <<- RMI_hour$temp + 273.15 # in Kelvin
+
+  F_sky_lw <<- e_atm*sigma_SB*macro_temp^4 # in W/m2
 
 }
 
@@ -89,8 +89,8 @@ import_pyr_observations <- function(){
   # Conversion from mV to W/m2 by factor 0.5
   F_sky_dir_init <<- mean(pyr_filtered$total - pyr_filtered$diffuse)/2    # Direct solar beam radiation (W/m2)
   F_sky_diff_init <<- mean(pyr_filtered$diffuse)/2                        # Diffuse radiation (W/m2)
-  macro_temp <<-  mean(pyr_filtered$temp) + 273.15 # in Kelvin
-  F_sky_lw <<- e_atm*sigma_SB*macro_temp^4 # in W/m2
+  # macro_temp <<-  mean(pyr_filtered$temp) + 273.15 # in Kelvin
+  # F_sky_lw <<- e_atm*sigma_SB*macro_temp^4 # in W/m2
 
 }
 
@@ -106,8 +106,61 @@ import_soil_temperature <- function(){
   TOMST_hourly$datehour_posix <- as.POSIXct(TOMST_hourly$datehour, format = "%Y.%m.%d %H", tz = "UTC")
 
   # Filter on datetime and name = "C75"
-  filtered_data <- subset(TOMST_hourly, datehour_posix == datetime & name == "C75")
+  filtered_data <- subset(TOMST_hourly, datehour_posix == datetime & height == 0) #name == "C75")
 
-  T_soil_deep <<- filtered_data$Tsoi + 273.15
+  T_soil_deep <<- mean(filtered_data$Tsoi) + 273.15
+
+  # Extract datetime of interest and output columns
+  TOMST_air_output <- filtered_data[grepl("^C", filtered_data$name),  c("D_edge", "Tair", 'Tsoi')]
+
+  # To define multiple T_soil_deep along the transect
+  # x_new = 1:135
+  # Tsoi_interp <- data.frame(
+  #   x = x_new,
+  #   Tsoi = approx(x = 135 - TOMST_air_output$D_edge, y = TOMST_air_output$Tsoi, xout = x_new)$y
+  # )
+  #
+  # # Repeat the Tsoi value closest to the edge 15 times to cover the soil between forest edge and max X (over the street)
+  # T_soil_deep <<- c(Tsoi_interp$Tsoi, rep(Tsoi_interp$Tsoi[length(Tsoi_interp$Tsoi)], 15)) + 273.15
+
+  # Save dataframe as CSV
+  write.csv(TOMST_air_output, "Data/TOMST_filtered_distance_temp.csv", row.names = FALSE)
 
 }
+
+#' Function to import Odyssey PAR observations (PAR radiation)
+#'
+#' @return PAR radiation
+#' @export
+import_PAR_observations <- function(){
+
+  PAR_data <- PAR_input_file
+
+  # Set datehour as a POSIXct, time zone of PAR is local, Brussels time (switching between CET and CEST)
+  PAR_data$datehour <- as.POSIXct(PAR_data$datehour, format = "%Y-%m-%d %H", tz = "Europe/Brussels")
+
+  # Convert to UTC
+  PAR_data$timestamp <- format(PAR_data$datehour, tz = "UTC", usetz = TRUE)
+  PAR_data$timestamp <- as.POSIXct(PAR_data$timestamp, tz = "UTC")
+
+  # Filter on datetime and only sensors at ground level
+  filtered_data <- subset(PAR_data, timestamp == datetime & height == 0 & grepl("^C", name))
+
+  # Reverse distance from east to west
+  filtered_data$distance <- 135 - filtered_data$D_edge
+
+  # Rescale PAR value in micromol/m2/s to total solar spectrum value in W/m2
+  # unit conversion = 0.217 (average energy value of photons in PAR range)
+  # spectrum range conversion = 0.45
+  filtered_data$rad <- filtered_data$PAR * 0.217 / 0.45
+
+
+  # Extract datetime of interest and output columns
+  PAR_output <- filtered_data[,  c("distance", "rad")]
+
+  # Save dataframe as CSV
+  write.csv(PAR_output, "Data/PAR_filtered_distance_rad.csv", row.names = FALSE)
+
+
+}
+

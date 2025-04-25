@@ -21,7 +21,7 @@ plots_lw <- function(lw_rad_2D, output_path){
 
   # Caption to be plotted below the plots
   caption = paste0(
-    "Diffuse LW radiation = ", round(F_sky_lw,2), ' W/m2'
+    "Diffuse LW radiation = ", round(F_sky_lw,2), ' W/m²'
   )
 
   # Colors to be used in the plots
@@ -35,7 +35,7 @@ plots_lw <- function(lw_rad_2D, output_path){
       values = rescale(c(0.25, 0.5, 0.75, 1)),
       guide = guide_colorbar(barwidth = 1, barheight = 10, frame.colour = "black", ticks.colour = "black")) +
     labs(title = paste("Vertical & lateral diffuse LW downward radiation, averaged across Y-slices"),
-         x = "X (m)", y = "Z (m)", fill = "F_d_down (W/m2)",
+         x = "X (m)", y = "Z (m)", fill = "LW down (W/m²)",
          caption = caption) +
     coord_fixed(ratio = 1) +
     theme_bw() +
@@ -56,7 +56,7 @@ plots_lw <- function(lw_rad_2D, output_path){
       values = rescale(c(0.25, 0.5, 0.75, 1)),
       guide = guide_colorbar(barwidth = 1, barheight = 10, frame.colour = "black", ticks.colour = "black")) +
     labs(title = paste("Vertical & lateral diffuse LW upward radiation, averaged across Y-slices"),
-         x = "X (m)", y = "Z (m)", fill = "F_d_up (W/m2)",
+         x = "X (m)", y = "Z (m)", fill = "LW up (W/m²)",
          caption = caption) +
     coord_fixed(ratio = 1) +
     theme_bw() +

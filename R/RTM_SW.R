@@ -228,14 +228,13 @@ shortwave_two_stream_RTM <- function(datetime, lat, lon, voxel_grid,
   # Horizontal shortwave RTM #
   ############################
 
-  # Direct radiation from eastern edge
-  F_sky_dir_h <<- round(
-    F_sky_dir_init / sin(sun_angles$sun_altitude) *
-      cos(sun_angles$sun_altitude) * abs(cos(sun_angles$sun_azimuth)) *
-      sun_angles$above_horizon * sun_angles$in_eastern_half, 0
-  )
   # Diffuse radiation from eastern edge
   F_sky_diff_h <- F_sky_diff_init
+
+  # Direct radiation from eastern edge
+  F_sky_dir_h <<- F_sky_dir_init / sin(sun_angles$sun_altitude) *
+      cos(sun_angles$sun_altitude) * abs(sin(sun_angles$sun_azimuth)) *
+      sun_angles$above_horizon * sun_angles$in_eastern_half
 
   # Calculate fluxes per unique YZ combination
   final_results_horizontal <- voxel_grid[, {

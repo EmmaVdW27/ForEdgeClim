@@ -165,8 +165,6 @@ longwave_two_stream_RTM <- function(voxel_grid, micro_grid, lw_two_stream,
   # Merge voxel_grid and micro_grid and filter T_soil
   micro_grid <- micro_grid[, .(X, Y, Z, temperature, T_soil = ifelse(Z == 1, T_soil, NA))]
   voxel_grid <- voxel_grid[micro_grid, on = .(X, Y, Z)]
-  #voxel_grid <- merge(voxel_grid, micro_grid, by = c("X", "Y", "Z"), all.x = TRUE)
-
 
   ##########################
   # Vertical longwave RTM  #

@@ -22,9 +22,9 @@ plots_sw <- function(sw_rad_2D, output_path){
 
   # Caption to be plotted below the plots
   caption = paste(
-    "Direct radiation vertical =", round(F_sky_dir_v,2), 'W/m2',
-    "| Direct radiation horizontal =", round(F_sky_dir_h,2), 'W/m2',
-    "| Diffuse radiation =", round(F_sky_diff_init,2), 'W/m2'
+    "Direct radiation vertical =", round(F_sky_dir_v,2), 'W/m²',
+    "| Direct radiation horizontal =", round(F_sky_dir_h,2), 'W/m²',
+    "| Diffuse radiation =", round(F_sky_diff_init,2), 'W/m²'
   )
 
   # Colors to be used in the plots
@@ -38,7 +38,7 @@ plots_sw <- function(sw_rad_2D, output_path){
       values = rescale(c(0.25, 0.5, 0.75, 1)),
       guide = guide_colorbar(barwidth = 1, barheight = 10, frame.colour = "black", ticks.colour = "black")) +
     labs(title = paste("Vertical & lateral diffuse downward radiation, averaged across Y-slices"),
-         x = "X (m)", y = "Z (m)", fill = "F_d_down (W/m2)",
+         x = "X (m)", y = "Z (m)", fill = "SW diffuse down (W/m²)",
          caption = caption) +
     coord_fixed(ratio = 1) +
     theme_bw() +
@@ -59,7 +59,7 @@ plots_sw <- function(sw_rad_2D, output_path){
       values = rescale(c(0.25, 0.5, 0.75, 1)),
       guide = guide_colorbar(barwidth = 1, barheight = 10, frame.colour = "black", ticks.colour = "black")) +
     labs(title = paste("Vertical & lateral diffuse upward radiation, averaged across Y-slices"),
-         x = "X (m)", y = "Z (m)", fill = "F_d_up (W/m2)",
+         x = "X (m)", y = "Z (m)", fill = "SW diffuse up (W/m²)",
          caption = caption) +
     coord_fixed(ratio = 1) +
     theme_bw() +
@@ -79,7 +79,7 @@ plots_sw <- function(sw_rad_2D, output_path){
       values = rescale(c(0.25, 0.5, 0.75, 1)),
       guide = guide_colorbar(barwidth = 1, barheight = 10, frame.colour = "black", ticks.colour = "black")) +
     labs(title = paste("Vertical & lateral direct beam downward radiation, averaged across Y-slices"),
-         x = "X (m)", y = "Z (m)", fill = "F_b_down (W/m2)",
+         x = "X (m)", y = "Z (m)", fill = "SW beam down (W/m²)",
          caption = caption) +
     coord_fixed(ratio = 1) +
     theme_bw() +
@@ -99,7 +99,7 @@ plots_sw <- function(sw_rad_2D, output_path){
       values = rescale(c(0.25, 0.5, 0.75, 1)),
       guide = guide_colorbar(barwidth = 1, barheight = 10, frame.colour = "black", ticks.colour = "black")) +
     labs(title = paste("Vertical & lateral, direct & diffuse downward radiation, averaged across Y-slices"),
-         x = "X (m)", y = "Z (m)", fill = "F_b_d_down (W/m2)",
+         x = "X (m)", y = "Z (m)", fill = "SW down (W/m²)",
          caption = caption) +
     coord_fixed(ratio = 1) +
     theme_bw() +
