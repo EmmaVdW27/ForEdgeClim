@@ -45,7 +45,7 @@ stop_fitness = 1 # 1°C as convergence criterium for RMSE
 iteration_counter <- 0
 
 # Make log file with column names
-param_names = c("betad", "beta0", "omega", "Kd_v", "Kb_v", "omega_g_v", "Kd_h", "Kb_h", "omega_g_h", "e_atm", "e_forest",
+param_names = c("betad", "beta0", "omega", "Kd_v", "Kb_v", "omega_g_v", "Kd_h", "Kb_h", "omega_g_h", "e_forest",
                 "beta_lw", "omega_lw", "Kd_lw_v", "omega_g_lw_v", "Kd_lw_h", "omega_g_lw_h", "h", "g_macro", "infl_macro", "infl_soil", "infl_forest",
                 "g_forest", "p_ground", "g_soil", "k_soil")
 
@@ -65,7 +65,7 @@ write.table(log_header, file = logfile, sep = ",", row.names = FALSE, col.names 
 # INITIAL VALUE MODEL PARAMETERS #
 ##################################
 
-initial_model_parameters = c(0.5, 0.3, 0.3, 0.35, 0.5, 0.1, 0.4, 0.6, 0, 0.8,
+initial_model_parameters = c(0.5, 0.3, 0.3, 0.35, 0.5, 0.1, 0.4, 0.6, 0,
                              0.98, 0, 0, 0.95, 0, 0.95, 0, 11, 11, 50, 4,
                              7, 11, 0.2, 8, 1.3)
 
@@ -99,12 +99,12 @@ cost_function <- function(par) {
   ####################
   betad <<- par[1]; beta0 <<- par[2]; omega <<- par[3]; Kd_v <<- par[4];
   Kb_v <<- par[5]; omega_g_v <<- par[6]; Kd_h <<- par[7];  Kb_h <<- par[8];
-  omega_g_h <<- par[9];  e_atm <<- par[10];  e_forest <<- par[11];
-  beta_lw <<- par[12];  omega_lw <<- par[13];  Kd_lw_v <<- par[14];
-  omega_g_lw_v <<- par[15];  Kd_lw_h <<- par[16];  omega_g_lw_h <<- par[17];
-  h <<- par[18];  g_macro <<- par[19];  infl_macro <<- par[20];
-  infl_soil <<- par[21];  infl_forest <<- par[22];  g_forest <<- par[23];
-  p_ground <<- par[24];  g_soil <<- par[25];  k_soil <<- par[26]
+  omega_g_h <<- par[9];  e_forest <<- par[10];
+  beta_lw <<- par[11];  omega_lw <<- par[12];  Kd_lw_v <<- par[13];
+  omega_g_lw_v <<- par[14];  Kd_lw_h <<- par[15];  omega_g_lw_h <<- par[16];
+  h <<- par[17];  g_macro <<- par[18];  infl_macro <<- par[19];
+  infl_soil <<- par[20];  infl_forest <<- par[21];  g_forest <<- par[22];
+  p_ground <<- par[23];  g_soil <<- par[24];  k_soil <<- par[25]
 
   rmse_vector <- c()
 
@@ -232,10 +232,10 @@ opt_result <<- cma_es(
   par = start_vals,
   fn = cost_function,
   lower = c(0.45, 0.25, 0.2, 0.25, 0.4, 0.08, 0.25, 0.4, 0,
-            0.7, 0.94, 0, 0, 0.95, 0, 0.95, 0, 2, 5, 20,
+            0.94, 0, 0, 0.95, 0, 0.95, 0, 2, 5, 20,
             2, 1, 5, 0.1, 2, 0.1),
   upper = c(0.55, 0.4, 0.5, 0.45, 0.7, 0.18, 0.6, 1, 0.001,
-            1, 0.99, 0.001, 0.001, 0.951, 0.001, 0.951, 0.001, 15, 30, 60,
+            0.99, 0.001, 0.001, 0.951, 0.001, 0.951, 0.001, 15, 30, 60,
             10, 10, 25, 0.35, 10, 1.5),
   control = list(maxit = max_it, trace = TRUE, stopfitness = stop_fitness)
 )

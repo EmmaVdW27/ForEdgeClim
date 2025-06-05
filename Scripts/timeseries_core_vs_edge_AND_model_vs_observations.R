@@ -1,6 +1,7 @@
 library(dplyr)
 library(lubridate)
 library(ggplot2)
+library(readxl)
 
 #########
 # INPUT #
@@ -75,6 +76,25 @@ model_edge_df <- bind_rows(
   })
 )
 
+# Macro data in long-form
+macro_df <- bind_rows(
+  lapply(seq_along(res_list), function(i) {
+    df   <- res_list[[i]]$micro_grid
+    Tair <- res_list[[i]]$air_temperature
+    df %>%
+      mutate(Tair = Tair) %>%
+      filter(z == max(z), y == 15, x == max(x)) %>%
+      transmute(
+        x           = x,
+        temperature = Tair - 273.15,
+        id       = "Macro",
+        Source       = "Model",
+        Position = "Macro",
+        time        = model_times[i]
+      )
+  })
+)
+
 # TOMST core data in long-form
 tomst_core_df <- bind_rows(
   lapply(seq_along(tomst_files), function(i) {
@@ -107,9 +127,12 @@ tomst_edge_df <- bind_rows(
   })
 )
 
+
 # combine dataframes
-combined_df <- bind_rows(model_core_df, model_edge_df, tomst_core_df, tomst_edge_df)
+combined_df <- bind_rows(model_core_df, model_edge_df, tomst_core_df, tomst_edge_df, macro_df)
 combined_df$time <- as.POSIXct(combined_df$time, format = "%Y-%m-%d %H:%M:%S")  # Pas dit format aan indien nodig
+combined_df$Position <- factor(combined_df$Position, levels = c("Macro", "Edge", "Core"))
+
 
 
 ##############################################################
@@ -125,11 +148,13 @@ timeseries = ggplot(combined_df, aes(x = time, y = temperature, color = Position
        color = "Position",
        linetype = "Source") +
   scale_color_manual(
-    values = c("Core" = "cornflowerblue",
-                "Edge" = "red4")) +
+    values = c("Macro" = "red4",
+                "Core" = "cornflowerblue",
+                "Edge" = "orange"
+               )) +
   scale_linetype_manual(values = c(
     "Model" = "solid",
-    "TOMST" = "twodash")) +
+    "TOMST" = "dotted")) +
   guides(
     linetype = guide_legend(override.aes = list(color = "black"))
   ) +

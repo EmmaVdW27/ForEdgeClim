@@ -52,6 +52,8 @@ import_RMI_observations <- function(){
 
   macro_temp <<- RMI_hour$temp + 273.15 # in Kelvin
 
+  e_atm <<- 9.37e-6*macro_temp^2 # formula of Swinbank, mainly for clear sky (when only having macro_temp as input, no cloudiness...)
+
   F_sky_lw <<- e_atm*sigma_SB*macro_temp^4 # in W/m2
 
 }
@@ -98,8 +100,6 @@ import_PE_observations <- function(){
 
   macro_temp <<- result$MeanTemperature + 273.15 # in Kelvin
 
-  F_sky_lw <<- e_atm*sigma_SB*macro_temp^4 # in W/m2
-
 }
 
 #' Function to import Delta-T pyranometer observations (direct and diffuse light)
@@ -136,7 +136,7 @@ import_pyr_observations <- function(){
   F_sky_dir_init <<- mean(pyr_filtered$total - pyr_filtered$diffuse)/2    # Direct solar beam radiation (W/m2)
   F_sky_diff_init <<- mean(pyr_filtered$diffuse)/2                        # Diffuse radiation (W/m2)
   # macro_temp <<-  mean(pyr_filtered$temp) + 273.15 # in Kelvin
-  # F_sky_lw <<- e_atm*sigma_SB*macro_temp^4 # in W/m2
+
 
 }
 

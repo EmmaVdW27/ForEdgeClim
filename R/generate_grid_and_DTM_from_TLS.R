@@ -76,9 +76,9 @@ generate_DTM_grid_TLS <- function(las_file, voxel_size = 1) {
 
   # Normalize the density values
   # Log transformation: Reduces dominance of high-density areas (mainly ground level) (necessary even after downsampling*) -> make distribution less extreme
-  # * downsampling is done with the RiSCAN octree filter previous to the import of the las file
+  # *downsampling is done with the RiSCAN octree filter previous to the import of the las file
   # Exponential scaling: Boosts contribution of higher voxels even with lower density -> sort of correction for occlusion
-  # The factor 0.5 determine how strong higher layers get more weight. 0.5 seems reasonable for a temperate forest.
+  # The factor 0.5 determines how strong higher layers get more weight. 0.5 seems reasonable for a temperate forest.
   scaling <- log1p(full_grid$n) * exp(0.5*full_grid$Z/max(full_grid$Z))
   full_grid$density <- scaling/max(scaling)
 
