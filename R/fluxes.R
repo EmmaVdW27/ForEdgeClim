@@ -11,14 +11,15 @@ calculate_G <- function(net_rad_ground){
   return(G)
 }
 
-#' Function to simulate air to air convection via heat convection equation. This is done in 3D.
+#' Function to simulate air to air diffusion via heat diffusion equation. This is done in 3D.
 #' In this function, air temperature is updated and ready to use for the sensible heat flux calculation.
 #'
 #' @param temp_air Air temperature
-#' @return total_convection Convection flux per voxel
+#' @param temp_soil Ground surface temperature
+#' @return total_diffusion Diffusion flux per voxel
 #' @export
 #'
-calculate_C <- function(temp_air, temp_soil){
+calculate_D <- function(temp_air, temp_soil){
   area = voxel_length^2  # Voxel 1 side area (m2)
   V <<- voxel_length^3     # Voxel volume (m3)
 
@@ -33,41 +34,41 @@ calculate_C <- function(temp_air, temp_soil){
   T_air_grid = array(temp_air, dim = c(nx, ny, nz))
   T_soil_grid = array(temp_soil, dim = c(nx, ny, nz))
 
-  # Initialize air heat convection flux 3D array
-  C_x <- array(0, dim = c(nx, ny, nz))
-  C_y <- array(0, dim = c(nx, ny, nz))
-  C_z <- array(0, dim = c(nx, ny, nz))
+  # Initialize air heat diffusion flux 3D array
+  D_x <- array(0, dim = c(nx, ny, nz))
+  D_y <- array(0, dim = c(nx, ny, nz))
+  D_z <- array(0, dim = c(nx, ny, nz))
 
-  # Simulate air convection via the heat convection equation
+  # Simulate air diffusion via the heat diffusion equation
   # Zero-flux boundary condition at 'core boundaries', ie, min x, min y & max y.
   # At these boundaries the forest is assumed to continue indefinitely.
 
   # Boundary conditions for x-direction (including eastern and western forest edge)
-  C_x[nx, , ] <-  h * area * (T_air_grid[nx, , ] - macro_temp) # Eastern edge (max x)
-  C_x[1, , ] <- 0 # Western edge (min x)
+  D_x[nx, , ] <-  h * area * (T_air_grid[nx, , ] - macro_temp) # Eastern edge (max x)
+  D_x[1, , ] <- 0 # Western edge (min x)
 
-  C_x[2:nx, , ] <- C_x[2:nx, , ] + h * area * (T_air_grid[2:nx, , ] - T_air_grid[1:(nx-1), , ])
-  C_x[1:(nx-1), , ] <- C_x[1:(nx-1), , ] + h * area * (T_air_grid[1:(nx-1), , ] - T_air_grid[2:nx, , ])
+  D_x[2:nx, , ] <- D_x[2:nx, , ] + h * area * (T_air_grid[2:nx, , ] - T_air_grid[1:(nx-1), , ])
+  D_x[1:(nx-1), , ] <- D_x[1:(nx-1), , ] + h * area * (T_air_grid[1:(nx-1), , ] - T_air_grid[2:nx, , ])
 
   # Boundary conditions for y-direction (including northern and southern forest edge)
-  C_y[, ny, ] <- 0 # Northern edge (max y)
-  C_y[, 1, ] <- 0 # Southern edge (min y)
+  D_y[, ny, ] <- 0 # Northern edge (max y)
+  D_y[, 1, ] <- 0 # Southern edge (min y)
 
-  C_y[, 1:(ny-1), ] <- C_y[, 1:(ny-1), ] + h * area * (T_air_grid[, 1:(ny-1), ] - T_air_grid[, 2:ny, ])
-  C_y[, 2:ny, ] <- C_y[, 2:ny, ] + h * area * (T_air_grid[, 2:ny, ] - T_air_grid[, 1:(ny-1), ])
+  D_y[, 1:(ny-1), ] <- D_y[, 1:(ny-1), ] + h * area * (T_air_grid[, 1:(ny-1), ] - T_air_grid[, 2:ny, ])
+  D_y[, 2:ny, ] <- D_y[, 2:ny, ] + h * area * (T_air_grid[, 2:ny, ] - T_air_grid[, 1:(ny-1), ])
 
   # Boundary conditions for z-direction (including upper canopy and ground)
-  C_z[, , nz] <- h * area * (T_air_grid[, , nz] - macro_temp)  # Upper canopy (max z)
-  C_z[, , 1]  <- h * area * (T_air_grid[, , 1] - T_soil_grid[ , , 1])  # Ground (min z)
+  D_z[, , nz] <- h * area * (T_air_grid[, , nz] - macro_temp)  # Upper canopy (max z)
+  D_z[, , 1]  <- h * area * (T_air_grid[, , 1] - T_soil_grid[ , , 1])  # Ground (min z)
 
-  C_z[, , 2:nz] <- C_z[, , 2:nz] + h * area * (T_air_grid[, , 2:nz] - T_air_grid[, , 1:(nz-1)])
-  C_z[, , 1:(nz-1)] <- C_z[, , 1:(nz-1)] + h * area * (T_air_grid[, , 1:(nz-1)] - T_air_grid[, , 2:nz])
+  D_z[, , 2:nz] <- D_z[, , 2:nz] + h * area * (T_air_grid[, , 2:nz] - T_air_grid[, , 1:(nz-1)])
+  D_z[, , 1:(nz-1)] <- D_z[, , 1:(nz-1)] + h * area * (T_air_grid[, , 1:(nz-1)] - T_air_grid[, , 2:nz])
 
-  # Total air convection flux per voxel
-  # This value is positive if energy leaves the voxel
-  total_convection <- C_x + C_y + C_z
+  # Total air diffusion flux per voxel
+  # This value is positive if heat energy leaves the voxel
+  total_diffusion <- D_x + D_y + D_z
 
-  return(as.vector(total_convection))
+  return(as.vector(total_diffusion))
 }
 
 
@@ -75,7 +76,8 @@ calculate_C <- function(temp_air, temp_soil){
 #' Function to calculate sensible heat transfer between surface and air
 #'
 #' @param T_surf Surface temperature
-#' @return total_convection Convection flux per voxel
+#' @param T_air Air temperature
+#' @return H Sensible heat flux
 #' @export
 #'
 calculate_H <- function(T_surf,T_air){
@@ -101,6 +103,7 @@ saturated_vapor_pressure <- function(temp) {
 #' Function to calculate latent heat flux LE (~ evapotranspiration, ET: LE = L_v . ET with L_v = latent heat of vaporization of water (J/kg))
 #'
 #' @param temperature Surface temperature
+#' @param net_rad Net radiation
 #' @return LE Latent heat flux
 #' @export
 #'

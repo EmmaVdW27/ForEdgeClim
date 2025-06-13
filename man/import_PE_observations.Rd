@@ -4,7 +4,7 @@
 \alias{import_PE_observations}
 \title{Function to import macro temperature from Plant Ecology lab}
 \usage{
-import_PE_observations()
+import_PE_observations(datetime)
 }
 \value{
 macro temperature and downward longwave radiation

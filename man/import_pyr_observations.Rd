@@ -4,7 +4,7 @@
 \alias{import_pyr_observations}
 \title{Function to import Delta-T pyranometer observations (direct and diffuse light)}
 \usage{
-import_pyr_observations()
+import_pyr_observations(datetime)
 }
 \value{
 Direct solar beam and diffuse radiation

@@ -16,7 +16,7 @@
 #' @return Dataframe with simulated microclimate temperatures and fluxes
 #' @importFrom dplyr group_by ungroup mutate left_join
 #' @export
-run_foredgeclim <- function(structure_grid) {
+run_foredgeclim <- function(structure_grid, datetime) {
 
 
   #print('🚩 𝙁𝙤𝙧𝙀𝙙𝙜𝙚𝘾𝙡𝙞𝙢')
@@ -169,13 +169,13 @@ run_foredgeclim <- function(structure_grid) {
       ungroup()
 
 
-    ##############################
-    # AIR TO AIR HEAT CONVECTION #
-    ##############################
+    #############################
+    # AIR TO AIR HEAT DIFFUSION #
+    #############################
 
-    #print('   C 💨')
-    dt = 1 # convection step is 1, ie, the iteration step taken for temp convergence
-    T_air_vec = T_air_vec - calculate_C(T_air_vec,micro_grid$T_ground)*dt/(Cp*V*rho)
+    #print('   D 💨')
+    dt = 1 # diffusion step is 1, ie, the iteration step taken for temp convergence
+    T_air_vec = T_air_vec - calculate_D(T_air_vec,micro_grid$T_ground)*dt/(Cp*V*rho)
 
 
     ######################

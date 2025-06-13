@@ -4,7 +4,7 @@
 #' @importFrom dplyr mutate
 #' @importFrom lubridate ymd_hms with_tz
 #' @export
-import_DTS_observations <- function(){
+import_DTS_observations <- function(datetime){
 
   DTS_data <- DTS_input_file
 
@@ -37,11 +37,14 @@ import_DTS_observations <- function(){
 
 #' Function to import RMI national weather station observation (macro temperature)
 #'
-#' @return macro temperature and downward longwave radiation
-#' @importFrom lubridate ymd_hms
+#' @return macro temperature and downward from sky longwave radiation
+#' @importFrom lubridate ymd_hms ymd_hm floor_date
+#' @importFrom dplyr mutate group_by summarise
 #' @export
-import_RMI_observations <- function(){
+import_RMI_observations <- function(datetime){
 
+  # MACRO TEMPERATURE
+  #------------------
   RMI_data <- RMI_input_file
 
   # Set timestamp in RMI_data as a POSIXct (RMI data always is in UTC)
@@ -52,9 +55,21 @@ import_RMI_observations <- function(){
 
   macro_temp <<- RMI_hour$temp + 273.15 # in Kelvin
 
-  e_atm <<- 9.37e-6*macro_temp^2 # formula of Swinbank, mainly for clear sky (when only having macro_temp as input, no cloudiness...)
+  # LONGWAVE RADIATION FROM SKY
+  #----------------------------
+  RMI_radiation <- RMI_radiation_input_file
 
-  F_sky_lw <<- e_atm*sigma_SB*macro_temp^4 # in W/m2
+  # Set timestamp in RMI_data as a POSIXct (RMI data always is in UTC)
+  RMI_radiation <- RMI_radiation |>
+    mutate(DATE = ymd_hm(DATE, tz = "UTC")) |>
+    mutate(DATE_hour = floor_date(DATE, unit = "hour")) |>
+    group_by(DATE_hour) |>
+    summarise(IR_mean = mean(IR_FROM_SKY_AVG..W.m2.min., na.rm = TRUE))
+
+  # Extract hour of interest
+  RMI_radiation <- RMI_radiation[RMI_radiation$DATE_hour == datetime, ]
+
+  F_sky_lw <<- RMI_radiation$IR_mean # in W/m2
 
 }
 
@@ -65,7 +80,7 @@ import_RMI_observations <- function(){
 #' @importFrom lubridate dmy_hm with_tz hours
 #' @importFrom readr read_delim col_character locale cols col_double
 #' @export
-import_PE_observations <- function(){
+import_PE_observations <- function(datetime){
 
   # read txt file
   df <- read_delim(
@@ -107,7 +122,7 @@ import_PE_observations <- function(){
 #' @return Direct solar beam and diffuse radiation
 #' @importFrom lubridate ymd_hms hours hour
 #' @export
-import_pyr_observations <- function(){
+import_pyr_observations <- function(datetime){
 
   pyr_data <- pyr_input_file
 
@@ -144,7 +159,7 @@ import_pyr_observations <- function(){
 #'
 #' @return T_soil_deep The soil temperature at 6cm deep at the position of the tower
 #' @export
-import_soil_temperature <- function(){
+import_soil_temperature <- function(datetime){
 
   TOMST_hourly <- TOMST_input_file
 
@@ -178,44 +193,9 @@ import_soil_temperature <- function(){
   # T_soil_deep <<- c(Tsoi_interp$Tsoi, rep(Tsoi_interp$Tsoi[length(Tsoi_interp$Tsoi)], 15)) + 273.15
 
   # Save dataframes as CSV
-  write.csv(TOMST_air_output, "Data/TOMST_filtered_distance_temp.csv", row.names = FALSE)
-  write.csv(TOMST_air_output_vertical, "Data/TOMST_filtered_height_temp.csv", row.names = FALSE)
+  write.csv(TOMST_air_output, paste0("Data/TOMST_filtered_distance_temp_", format(datetime, "%Y%m%d_%H%M"), ".csv"), row.names = FALSE)
+  write.csv(TOMST_air_output_vertical, paste0("Data/TOMST_filtered_height_temp_", format(datetime, "%Y%m%d_%H%M"), ".csv"), row.names = FALSE)
 
 }
 
-#' Function to import Odyssey PAR observations (PAR radiation)
-#'
-#' @return PAR radiation
-#' @export
-import_PAR_observations <- function(){
-
-  PAR_data <- PAR_input_file
-
-  # Set datehour as a POSIXct, time zone of PAR is local, Brussels time (switching between CET and CEST)
-  PAR_data$datehour <- as.POSIXct(PAR_data$datehour, format = "%Y-%m-%d %H", tz = "Europe/Brussels")
-
-  # Convert to UTC
-  PAR_data$timestamp <- format(PAR_data$datehour, tz = "UTC", usetz = TRUE)
-  PAR_data$timestamp <- as.POSIXct(PAR_data$timestamp, tz = "UTC")
-
-  # Filter on datetime and only sensors at ground level
-  filtered_data <- subset(PAR_data, timestamp == datetime & height == 0 & grepl("^C", name))
-
-  # Reverse distance from east to west
-  filtered_data$distance <- 135 - filtered_data$D_edge
-
-  # Rescale PAR value in micromol/m2/s to total solar spectrum value in W/m2
-  # unit conversion = 0.217 (average energy value of photons in PAR range)
-  # spectrum range conversion = 0.45
-  filtered_data$rad <- filtered_data$PAR * 0.217 / 0.45
-
-
-  # Extract datetime of interest and output columns
-  PAR_output <- filtered_data[,  c("distance", "rad")]
-
-  # Save dataframe as CSV
-  write.csv(PAR_output, "Data/PAR_filtered_distance_rad.csv", row.names = FALSE)
-
-
-}
 

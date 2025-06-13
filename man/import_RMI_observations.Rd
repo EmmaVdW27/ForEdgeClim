@@ -4,10 +4,10 @@
 \alias{import_RMI_observations}
 \title{Function to import RMI national weather station observation (macro temperature)}
 \usage{
-import_RMI_observations()
+import_RMI_observations(datetime)
 }
 \value{
-macro temperature and downward longwave radiation
+macro temperature and downward from sky longwave radiation
 }
 \description{
 Function to import RMI national weather station observation (macro temperature)

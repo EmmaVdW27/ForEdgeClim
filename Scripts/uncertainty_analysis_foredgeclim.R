@@ -86,21 +86,21 @@ model_function <- function(param_values) {
 
     current_datetime <- datetime
 
-    create_input_drivers(datetime)
+    create_input_drivers()
     create_physical_constants()
     create_model_parameters()
     for(i in seq_along(param_names)) {
       assign(param_names[i], param_values[i], envir = .GlobalEnv) # overwrite parameters in global environment
     }
 
-    import_DTS_observations()
-    import_RMI_observations()
-    import_pyr_observations()
-    import_soil_temperature()
+    import_DTS_observations(current_datetime)
+    import_RMI_observations(current_datetime)
+    import_pyr_observations(current_datetime)
+    import_soil_temperature(current_datetime)
 
 
     voxel_TLS <- readRDS(TLS_filtered_file)
-    res <- run_foredgeclim(voxel_TLS$grid)
+    res <- run_foredgeclim(voxel_TLS$grid, current_datetime)
 
     mean(res$air_temperature[res$micro_grid$z == 1], na.rm = TRUE) - 273.15 # K to °C
 }

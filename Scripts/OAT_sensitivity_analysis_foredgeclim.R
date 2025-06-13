@@ -99,20 +99,20 @@ results_list <- future_lapply(param_list, function(df_row) {
   # import & init
   current_datetime <- as.POSIXct(datetime, tz = "UTC")
 
-  create_input_drivers(current_datetime)
+  create_input_drivers()
   create_model_parameters()
   create_physical_constants()
   if(params != "input_drivers") {assign(param, val, envir = .GlobalEnv)}
 
-  import_DTS_observations()
-  import_RMI_observations()
-  import_pyr_observations()
-  import_soil_temperature()
+  import_DTS_observations(current_datetime)
+  import_RMI_observations(current_datetime)
+  import_pyr_observations(current_datetime)
+  import_soil_temperature(current_datetime)
   if(params == "input_drivers") {assign(param, val, envir = .GlobalEnv)}
 
   # run model
   voxel_TLS <- readRDS(TLS_filtered_file)
-  res <- run_foredgeclim(voxel_TLS$grid)
+  res <- run_foredgeclim(voxel_TLS$grid, current_datetime)
 
   metric <- mean(res$air_temperature[res$micro_grid$z == 1], na.rm = TRUE) - 273.15 # K to °C
 

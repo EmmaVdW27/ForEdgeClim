@@ -10,7 +10,8 @@ plots_flux(
   sensible_flux,
   latent_flux,
   G,
-  output_path
+  output_path,
+  datetime
 )
 }
 \arguments{

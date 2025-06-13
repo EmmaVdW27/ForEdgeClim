@@ -4,7 +4,7 @@
 \alias{run_foredgeclim}
 \title{Execute the microclimate model ForEdgeClim}
 \usage{
-run_foredgeclim(structure_grid)
+run_foredgeclim(structure_grid, datetime)
 }
 \arguments{
 \item{input_data}{Dataframe with input variables}

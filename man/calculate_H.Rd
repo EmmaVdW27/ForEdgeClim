@@ -8,9 +8,11 @@ calculate_H(T_surf, T_air)
 }
 \arguments{
 \item{T_surf}{Surface temperature}
+
+\item{T_air}{Air temperature}
 }
 \value{
-total_convection Convection flux per voxel
+H Sensible heat flux
 }
 \description{
 Function to calculate sensible heat transfer between surface and air

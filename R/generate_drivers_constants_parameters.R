@@ -4,7 +4,7 @@
 #' @importFrom readxl read_excel
 #' @return input driver variables
 #' @export
-create_input_drivers <- function(datetime) {
+create_input_drivers <- function() {
 
   # input files
   TLS_input_file <<- 'Data/2023-07-10_ForSe_Gontrode_5cm_transect_emma.las' #Off-ground&noise.las'
@@ -13,16 +13,15 @@ create_input_drivers <- function(datetime) {
   vox_filtered_file <<- 'Data/vox_scaled_DTM_and_grid_July.rds'
   DTS_input_file <<- read.csv("Data/DTS_unfiltered/2023-07-08_09_hourly.csv")
   RMI_input_file <<- read.csv("Data/RMI_Melle.csv")
+  RMI_radiation_input_file <<- read.csv("Data/RMI_radiation.csv", sep = "|")
   PE_input_file <<- "Data/Macro_temp_plant_eco.txt"
   pyr_input_file <<-  read.csv("Data/pyranometer_tower.dat", skip = 4, header = FALSE, stringsAsFactors = FALSE)
   TOMST_input_file <<- read_excel("Data/TOMST_hourly.xlsx")
-  PAR_input_file <<- read_excel("Data/PAR_hourly.xlsx")
 
   # plot parameters
   req_height <<- 1
 
   # spacetime specifics
-  datetime <<- datetime
   lat <<- 50.980
   lon <<- 3.816
   length_transect <<- 135

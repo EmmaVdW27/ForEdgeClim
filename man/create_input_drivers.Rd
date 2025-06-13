@@ -4,7 +4,7 @@
 \alias{create_input_drivers}
 \title{Generate input driver variables}
 \usage{
-create_input_drivers(datetime)
+create_input_drivers()
 }
 \arguments{
 \item{datetime}{POSIXct object}

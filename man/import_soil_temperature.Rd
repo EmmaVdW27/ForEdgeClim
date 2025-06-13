@@ -4,7 +4,7 @@
 \alias{import_soil_temperature}
 \title{Function to import TOMST observations (soil temperature at tower)}
 \usage{
-import_soil_temperature()
+import_soil_temperature(datetime)
 }
 \value{
 T_soil_deep The soil temperature at 6cm deep at the position of the tower

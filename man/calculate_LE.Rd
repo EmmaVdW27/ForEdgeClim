@@ -8,6 +8,8 @@ calculate_LE(temperature, net_rad)
 }
 \arguments{
 \item{temperature}{Surface temperature}
+
+\item{net_rad}{Net radiation}
 }
 \value{
 LE Latent heat flux

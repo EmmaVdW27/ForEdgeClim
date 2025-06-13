@@ -4,7 +4,7 @@
 \alias{plots_temp}
 \title{Function to create several temperature plots}
 \usage{
-plots_temp(micro_grid, T_air_vec, output_path)
+plots_temp(micro_grid, T_air_vec, output_path, datetime)
 }
 \arguments{
 \item{micro_grid}{Grid with micro variables}

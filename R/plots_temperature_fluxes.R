@@ -10,7 +10,7 @@
 #' @importFrom ggtext element_markdown
 #' @export
 #'
-plots_temp <- function(micro_grid, T_air_vec, output_path){
+plots_temp <- function(micro_grid, T_air_vec, output_path, datetime){
 
   # Define grid with surface temperatures
   temp_surf_grid = micro_grid
@@ -137,8 +137,8 @@ plots_temp <- function(micro_grid, T_air_vec, output_path){
   DTS <- read.csv("Data/DTS_filtered_distance_temp.csv")
 
   # TOMST observations
-  TOMST <- read.csv("Data/TOMST_filtered_distance_temp.csv")
-  TOMST_vertical <- read.csv("Data/TOMST_filtered_height_temp.csv")
+  TOMST <- read.csv(paste0("Data/TOMST_filtered_distance_temp_", format(datetime, "%Y%m%d_%H%M"), ".csv"))
+  TOMST_vertical <- read.csv(paste0("Data/TOMST_filtered_height_temp_", format(datetime, "%Y%m%d_%H%M"), ".csv"))
 
   # Add dataset lable
   reqhgt$model <- "Modelled (every 1m)"
@@ -243,74 +243,6 @@ plots_temp <- function(micro_grid, T_air_vec, output_path){
 
 
 
-
-
-#' Function to create radiation flux plot at 1m height
-#'
-#' @param micro_grid Grid with micro variables
-#' @param net_radiaiton Vector with net radiation
-#' @param output_path The output_path to store the plots
-#' @return flux plot at 1m height of model output vs PAR sensors
-#' @importFrom dplyr filter group_by summarise
-#' @importFrom scales rescale
-#' @import ggplot2
-#' @export
-#'
-plot_rad <- function(micro_grid, down_radiation, output_path){
-  rad_grid = micro_grid
-  rad_grid$down_radiation = down_radiation
-
-  # Modelled net radiation at PAR sensor positions
-  reqhgt_rad <- rad_grid |>
-    filter(z == req_height, y == 15, x <= length_transect)
-
-  # PAR observations
-  PAR <- read.csv("Data/PAR_filtered_distance_rad.csv")
-
-  # Caption to be plotted below the plots
-  caption = substitute(
-    atop(
-      "Macrotemperature = "*T*"°C | Date-time = "*DT*" h UTC",
-      "Direct radiation vertical = "*V*" W/m"^2*
-        " | Direct radiation horizontal = "*H*" W/m"^2*
-        " | Diffuse radiation = "*D*" W/m"^2
-    ),
-    list(
-      T = round(macro_temp, 2) - 273.15,
-      DT = format(datetime, "%Y-%m-%d %H"),
-      V = round(F_sky_dir_v, 2),
-      H = round(F_sky_dir_h, 2),
-      D = round(F_sky_diff_init, 2)
-    )
-  )
-
-  # 1D graph:
-  rad_height <- ggplot() +
-    geom_line(data = reqhgt_rad, aes(x = x, y = down_radiation, color = "Modelled (every 1m)")) +
-    geom_point(data = PAR, aes(x = distance, y = rad, color = "PAR observations (every 15m)")) +
-    geom_line(data = PAR, aes(x = distance, y = rad, color = "PAR observations (every 15m)")) +
-    labs(
-      title = "Downward radiation at 1m height from forest core to edge",
-      x = "Distance (m)",
-      y = "Radiation (W/m2)",
-      caption = caption) +
-    scale_color_manual(
-      values = c("Modelled (every 1m)" = "cornflowerblue", "PAR observations (every 15m)" = "red")
-    ) +
-    theme_bw() +
-    theme(
-      legend.position = "top",
-      legend.title = element_blank(),
-      plot.caption = element_text(hjust = 0, color = "black")
-    )
-
-  print(rad_height)
-
-  ggsave(paste0(output_path, '/rad_reqhgt.png'), plot = rad_height, width = 10, height = 6, dpi = 300)
-}
-
-
-
 #' Function to create several flux plots
 #'
 #' @param micro_grid Grid with micro variables
@@ -325,7 +257,7 @@ plot_rad <- function(micro_grid, down_radiation, output_path){
 #' @import ggplot2
 #' @export
 #'
-plots_flux <- function(micro_grid, net_radiation, sensible_flux, latent_flux, G, output_path){
+plots_flux <- function(micro_grid, net_radiation, sensible_flux, latent_flux, G, output_path, datetime){
 
   # Define grid with fluxes
   fluxes_grid = micro_grid

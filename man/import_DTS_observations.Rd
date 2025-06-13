@@ -4,7 +4,7 @@
 \alias{import_DTS_observations}
 \title{Function to import hourly DTS data observations}
 \usage{
-import_DTS_observations()
+import_DTS_observations(datetime)
 }
 \value{
 Filtered CSV file
