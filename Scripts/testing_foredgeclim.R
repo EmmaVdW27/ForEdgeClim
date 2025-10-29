@@ -5,9 +5,11 @@ library(ForEdgeClim)
 ####################
 
 start_timeseries = Sys.time()
-start_time <- as.POSIXct("2024-10-04 12:00:00", tz = "UTC")
-end_time <- as.POSIXct("2024-10-04 12:00:00", tz = "UTC")
+start_time <- as.POSIXct("2023-10-08 12:00:00", tz = "UTC")
+end_time <- as.POSIXct("2023-10-08 12:00:00", tz = "UTC")
 datetime_series <- seq(start_time, end_time, by = "hour")
+TLS_input_file <- 'Data/2025-04-08_ForSe_Gontrode_5cm_transect_emma.las'
+TLS_filtered_file <- 'Data/TLS_scaled_DTM_and_grid_April2025.rds'
 
 for (current_datetime in datetime_series) {
 
@@ -20,8 +22,6 @@ for (current_datetime in datetime_series) {
   ##########################
 
   create_input_drivers()
-  TLS_input_file <<- 'Data/2024-10-04_ForSe_Gontrode_5cm_transect_emma.las'
-  TLS_filtered_file <<- 'Data/TLS_scaled_DTM_and_grid_October2024.rds'
   create_physical_constants()
   create_model_parameters()
 

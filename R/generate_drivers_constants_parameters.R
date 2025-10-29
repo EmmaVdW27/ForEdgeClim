@@ -1,14 +1,11 @@
 #' Generate input driver variables
 #'
-#' @param datetime POSIXct object
 #' @importFrom readxl read_excel
 #' @return input driver variables
 #' @export
 create_input_drivers <- function() {
 
   # input files
-  TLS_input_file <<- 'Data/2025-01-10_ForSe_Gontrode_5cm_transect_emma.las'
-  TLS_filtered_file <<- 'Data/TLS_scaled_DTM_and_grid_January2025.rds'
   RMI_input_file <<- read.csv("Data/RMI_Melle.csv")
   RMI_radiation_input_file <<- read.csv("Data/RMI_radiation.csv", sep = "|")
   PE_input_file <<- "Data/Macro_temp_plant_eco.txt"
@@ -44,7 +41,7 @@ create_physical_constants <- function() {
   rho <<- 1.225         # Density air (kg/m3)
 
   # constants for ground heat flux (G) and soil temperature
-  stable_soil_depth <<- 0.06 # Depth of measured soil temperature (assumed to be stable over 6-12h)
+  stable_soil_depth <<- 0.08 # Depth of measured soil temperature (assumed to be stable over 6-12h)
 
   # constants (empirical) for latent heat flux (LE)
   alpha_PT <<- 1.26         # Replaces aerodynamic terms from Penman-Monteith equation (unitless)
@@ -61,47 +58,47 @@ create_physical_constants <- function() {
 create_model_parameters <- function() {
 
   # parameters for shortwave RTM
-  betad <<- 0.5          # Fraction of scattered diffuse radiation in backward direction
-  beta0 <<- 0.5         # Fraction of scattered direct beam radiation in backward direction
-  omega <<- 0.5        # Scattering coefficient
+  betad <<- 0.325          # Fraction of scattered diffuse radiation in backward direction
+  beta0 <<- 0.325         # Fraction of scattered direct beam radiation in backward direction
+  omega <<- 0.52        # Scattering coefficient
   # -> Vertical RTM
-  Kd_v <<- 0.2          # Diffuse extinction coefficient for vertical radiation, per unit density
-  Kb_v <<- 0.774         # Direct beam extinciton coefficient for vertical radiation, per unit density
-  omega_g_v <<- 0.276     # Ground scattering
+  Kd_v <<- 0.775          # Diffuse extinction coefficient for vertical radiation, per unit density
+  Kb_v <<- 1.25         # Direct beam extinciton coefficient for vertical radiation, per unit density
+  omega_g_v <<- 0.13    # Ground scattering
   # -> Horizontal RTM
-  Kd_h <<- 0.15          # Diffuse extinciton coefficient for lateral radiation, per unit density
-  Kb_h <<- 0.2          # Direct beam extinction coefficient for lateral radiation, per unit density
+  Kd_h <<- 0.725          # Diffuse extinciton coefficient for lateral radiation, per unit density
+  Kb_h <<- 1.15          # Direct beam extinction coefficient for lateral radiation, per unit density
   omega_g_h <<- 0.15       # This is not ground scattering, but scattering by the inner forest. This is a balanced
   # value between reflection by leaves and transmission by open spaces.
 
   # parameters for longwave RTM
-  e_forest <<- 0.937     # Emissivity forest (leaves and wood)
-  beta_lw <<- 0      # Fraction of scattered longwave radiation in backward direction
-  omega_lw <<- 0.1      # Scattering coefficient for longwave radiation
+  e_forest <<- 0.965     # Emissivity forest (leaves and wood)
+  beta_lw <<- 0.325      # Fraction of scattered longwave radiation in backward direction
+  omega_lw <<- 0.035      # Scattering coefficient for longwave radiation
   # -> Vertical RTM
-  Kd_lw_v <<- 0.1       # Longwave extinction coefficient for vertical radiation, per unit density
-  omega_g_lw_v <<- 0.05 # Ground scattering for longwave radiation
+  Kd_lw_v <<- 0.3       # Longwave extinction coefficient for vertical radiation, per unit density
+  omega_g_lw_v <<- 0.055 # Ground scattering for longwave radiation
   # -> Horizontal RTM
-  Kd_lw_h <<- 0.2       # Longwave extinciton coefficient for lateral radiation, per unit density
-  omega_g_lw_h <<- 0.05    # This is not ground scattering, but scattering by the inner forest. This is a balanced
+  Kd_lw_h <<- 0.3       # Longwave extinciton coefficient for lateral radiation, per unit density
+  omega_g_lw_h <<- 0.035    # This is not ground scattering, but scattering by the inner forest. This is a balanced
   # value between reflection by leaves and transmission by open spaces.
 
   # parameters for air to air heat convection (C)
-  h <<- 10.86              # Convection coefficient of air (W/m2/K), higher value means more wind/more turbulence
+  h <<- 10              # Convection coefficient of air (W/m2/K), higher value means more wind/more turbulence
 
   # parameters for update linearisation air temperature
-  g_macro <<- 11.43          # Convective heat transfer coefficient between (voxel) air and (macro) air (W/m2/K)
-  infl_macro <<- 50.03       # Distance over which the influence of macro temp on air temp is reduced by 50% (m)
-  infl_soil <<- 6.028         # Distance over which the influence of soil temp on air temp is reduced by 50% (m)
-  infl_forest <<- 6.169       # Distance over which the influence of forest temp on air temp is reduced by 50% (m)
+  g_macro <<- 25          # Convective heat transfer coefficient between (voxel) air and (macro) air (W/m2/K)
+  infl_macro <<- 32.5       # Distance over which the influence of macro temp on air temp is reduced by 50% (m)
+  infl_soil <<- 5         # Distance over which the influence of soil temp on air temp is reduced by 50% (m)
+  infl_forest <<- 5       # Distance over which the influence of forest temp on air temp is reduced by 50% (m)
 
   # parameters for sensible heat flux (H)
-  g_forest <<- 10.188   # Combined conductive & convective heat transfer coefficient between (voxel) air and structure (leaf) (W/m2/K)
+  g_forest <<- 12.5   # Combined conductive & convective heat transfer coefficient between (voxel) air and structure (leaf) (W/m2/K)
 
   # parameters for ground heat flux (G) and soil temperature
-  p_ground <<- 0.303          # Fraction of net ground radiation to define ground flux
-  g_soil <<- 9.233              # Convective heat transfer coefficient between (voxel) air of air layer just above the ground and ground surface (W/m2/K)
-  k_soil <<- 0.629             # Thermal conductance soil (W/m/K)
+  p_ground <<- 0.225          # Fraction of net ground radiation to define ground flux
+  g_soil <<- 10              # Convective heat transfer coefficient between (voxel) air of air layer just above the ground and ground surface (W/m2/K)
+  k_soil <<- 1.225             # Thermal conductance soil (W/m/K)
 
 }
 

@@ -79,6 +79,8 @@ generate_DTM_grid_TLS <- function(las_file, voxel_size = 1) {
   # *downsampling is done with the RiSCAN octree filter previous to the import of the las file
   # Exponential scaling: Boosts contribution of higher voxels even with lower density -> sort of correction for occlusion
   # The factor 0.5 determines how strong higher layers get more weight. 0.5 seems reasonable for a temperate forest.
+  # For this application (a structural proxy in a microclimate model), this transformation is likely sufficient,
+  # especially since the goal is not to quantify each voxel precisely, but rather to capture a spatial pattern.
   scaling <- log1p(full_grid$n) * exp(0.5*full_grid$Z/max(full_grid$Z))
   full_grid$density <- scaling/max(scaling)
 

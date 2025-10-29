@@ -30,9 +30,10 @@ print(paste("Using", availableCores(), "cores."))
 # INPUT #
 #########
 
-datetime <- as.POSIXct("2023-07-07 01:00:00", tz = "UTC")
-structure <- "TLS_scaled_DTM_and_gridJuly2023.rds"
-n <- 400
+datetime <- as.POSIXct("2025-04-30 12:00:00", tz = "UTC")
+structure <- "Data/TLS_scaled_DTM_and_grid_April2025.rds"
+structure_PAI_scaling_factor <- 2.24 / 6.18
+n <- 2
 n_boot <- 1000
 
 output_path <- "Output/sensitivity_analysis/"
@@ -55,12 +56,6 @@ param_ranges <- data.frame(
     20, 40, 60, 10, 10, 20, 0.35, 15, 2.2
   ),
   stringsAsFactors = FALSE
-)
-
-param_colors <- c(
-  colorRampPalette(c("gold", "darkorange"))(9),
-  colorRampPalette(c("mediumpurple", "darkviolet"))(7),
-  colorRampPalette(c("darkseagreen", "darkgreen"))(9)
 )
 
 param_names <- param_ranges$parameter
@@ -98,17 +93,21 @@ scaled_input <- scale_sobol(sobol_design$X)
 
 model_function <- function(param_values) {
   create_input_drivers()
-  TLS_filtered_file <<- structure
   create_physical_constants()
   create_model_parameters()
   for (i in seq_along(param_names)) {
     assign(param_names[i], param_values[i], envir = .GlobalEnv)
   }
+
   import_RMI_observations(datetime)
+  if(is_empty(F_sky_lw)){
+    assign("F_sky_lw", sigma_SB * 0.75 * macro_temp^4, envir = .GlobalEnv)
+  }
   import_pyr_observations(datetime)
   import_soil_temperature(datetime)
 
-  voxel_TLS <- readRDS(TLS_filtered_file)
+  voxel_TLS <- readRDS(structure)
+  voxel_TLS$grid$density = voxel_TLS$grid$density * structure_PAI_scaling_factor
   res <- run_foredgeclim(voxel_TLS$grid, datetime)
 
   sel <- res$micro_grid$z == 1 & res$micro_grid$y == 15

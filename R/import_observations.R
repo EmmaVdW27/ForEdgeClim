@@ -122,7 +122,7 @@ import_pyr_observations <- function(datetime){
 #' Function to import TOMST observations (soil temperature at tower and
 #' observations along the transect)
 #'
-#' @return T_soil_deep The soil temperature at 6cm deep at the position of the tower
+#' @return T_soil_deep The soil temperature at 8cm deep at the position of the tower
 #' @export
 import_soil_temperature <- function(datetime){
 
@@ -131,11 +131,12 @@ import_soil_temperature <- function(datetime){
   # Set 'datehour' as POSIXct-object
   TOMST_hourly$datehour_posix <- as.POSIXct(TOMST_hourly$datehour, format = "%Y.%m.%d %H", tz = "UTC")
 
-  # Filter on datetime and bodemhoogte
+  # Filter on datetime and height
   filtered_data <- subset(TOMST_hourly, datehour_posix == datetime & height == 0)
-  # Filter on datetime
+  # Filter only on datetime
   filtered_data_vertical <- subset(TOMST_hourly, datehour_posix == datetime)
 
+  # Soil temperature as mean of all (20) sensors within the forest soil
   T_soil_deep <<- mean(filtered_data$Tsoi) + 273.15
 
   # Extract TOMST sensors of interest and output columns for horizontal measurements
