@@ -152,7 +152,7 @@ plots_temp <- function(micro_grid, T_air_vec, output_path, datetime){
       y = "Temperature (°C)",
       caption = caption) +
     scale_color_manual(
-      values = c("Modelled (every 1m)" = "cornflowerblue", "TOMST observations (every 15m)" = "darkgreen")
+      values = c("Modelled (every 1m)" = "#8CB4E1", "TOMST observations (every 15m)" = "#F28C8C")
     ) +
     theme_bw() +
     theme(
@@ -181,7 +181,7 @@ plots_temp <- function(micro_grid, T_air_vec, output_path, datetime){
       y = "Temperature (°C)",
       ) +
     scale_color_manual(
-      values = c("Modelled (every 1m)" = "cornflowerblue", "TOMST observations (every 15m)" = "darkgreen")
+      values = c("Modelled (every 1m)" = "#8CB4E1", "TOMST observations (every 15m)" = "#F28C8C")
     ) +
     theme_bw() +
     theme(
@@ -211,7 +211,7 @@ plots_temp <- function(micro_grid, T_air_vec, output_path, datetime){
       y = "Height (m)",
     ) +
     scale_color_manual(
-      values = c("Modelled (every 1m)" = "cornflowerblue", "TOMST observations (every 7m)" = "darkgreen")
+      values = c("Modelled (every 1m)" = "#8CB4E1", "TOMST observations (every 7m)" = "#F28C8C")
     ) +
     theme_bw() +
     theme(

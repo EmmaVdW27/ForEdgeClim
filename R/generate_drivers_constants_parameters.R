@@ -7,7 +7,7 @@ create_input_drivers <- function() {
 
   # input files
   RMI_input_file <<- read.csv("Data/RMI_Melle.csv")
-  RMI_radiation_input_file <<- read.csv("Data/RMI_radiation.csv", sep = "|")
+  RMI_radiation_input_file <<- read.csv("Data/RMI_radiation.csv", sep = ";")
   PE_input_file <<- "Data/Macro_temp_plant_eco.txt"
   pyr_input_file <<-  read.csv("Data/pyranometer_tower.dat", skip = 4, header = FALSE, stringsAsFactors = FALSE)
   TOMST_input_file <<- read_excel("Data/TOMST_hourly.xlsx")

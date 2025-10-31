@@ -6,9 +6,6 @@
 \usage{
 create_input_drivers()
 }
-\arguments{
-\item{datetime}{POSIXct object}
-}
 \value{
 input driver variables
 }

@@ -8,7 +8,7 @@ observations along the transect)}
 import_soil_temperature(datetime)
 }
 \value{
-T_soil_deep The soil temperature at 6cm deep at the position of the tower
+T_soil_deep The soil temperature at 8cm deep at the position of the tower
 }
 \description{
 Function to import TOMST observations (soil temperature at tower and

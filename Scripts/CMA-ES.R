@@ -58,6 +58,8 @@ all_datetimes <- c(
   )
 )
 
+# For spring and autumn, there are 2 years to be taken into account,
+# for summer and winter, there is only 1 year.
 structures <- list(
   `2024` = readRDS("Data/TLS_scaled_DTM_and_grid_April2024.rds"),
   `2025` = readRDS("Data/TLS_scaled_DTM_and_grid_April2025.rds")

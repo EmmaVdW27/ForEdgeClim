@@ -33,7 +33,7 @@ print(paste("Using", availableCores(), "cores."))
 datetime <- as.POSIXct("2025-04-30 12:00:00", tz = "UTC")
 structure <- "Data/TLS_scaled_DTM_and_grid_April2025.rds"
 structure_PAI_scaling_factor <- 2.24 / 6.18
-n <- 2
+n <- 400
 n_boot <- 1000
 
 output_path <- "Output/sensitivity_analysis/"
@@ -110,15 +110,39 @@ model_function <- function(param_values) {
   voxel_TLS$grid$density = voxel_TLS$grid$density * structure_PAI_scaling_factor
   res <- run_foredgeclim(voxel_TLS$grid, datetime)
 
-  sel <- res$micro_grid$z == 1 & res$micro_grid$y == 15
-  xs <- res$micro_grid$x[sel]
-  ts <- res$air_temperature[sel] - 273.15
+  # horizontal gradient
+  sel_h <- res$micro_grid$z == 1 & res$micro_grid$y == 15
+  xs_h <- res$micro_grid$x[sel_h]
+  ta_h <- res$air_temperature[sel_h] - 273.15 # air temperature
+  tf_h <- res$micro_grid$temperature[sel_h] - 273.15 # forest surface temperature
 
-  avT <- mean(ts, na.rm = TRUE)
-  gradT <- (ts[xs == max(xs)][1] - ts[xs == min(xs)][1]) / (max(xs) - min(xs))
-  SDT <- sd(ts, na.rm = TRUE)
+  # air temperature metrics
+  avTa_h <- mean(ta_h, na.rm = TRUE)
+  gradTa_h <- (ta_h[xs_h == max(xs_h)][1] - ta_h[xs_h == min(xs_h)][1]) / (max(xs_h) - min(xs_h))
+  SDTa_h <- sd(ta_h, na.rm = TRUE)
 
-  return(c(avT = avT, gradT = gradT, SDT = SDT))
+  # forest surface temperature metrics
+  avTf_h <- mean(tf_h, na.rm = TRUE)
+  gradTf_h <- (tf_h[xs_h == max(xs_h)][1] - tf_h[xs_h == min(xs_h)][1]) / (max(xs_h) - min(xs_h))
+  SDTf_h <- sd(tf_h, na.rm = TRUE)
+
+  # vertical gradient
+  sel_v <- res$micro_grid$x == 68 & res$micro_grid$y == 15
+  zs_v <- res$micro_grid$z[sel_v]
+  ta_v <- res$air_temperature[sel_v] - 273.15 # air temperature
+  tf_v <- res$micro_grid$temperature[sel_v] - 273.15 # forest surface temperature
+
+  # air temperature metrics
+  avTa_v <- mean(ta_v, na.rm = TRUE)
+  gradTa_v <- (ta_v[zs_v == max(zs_v)][1] - ta_v[zs_v == min(zs_v)][1]) / (max(zs_v) - min(zs_v))
+  SDTa_v <- sd(ta_v, na.rm = TRUE)
+
+  # forest surface temperature metrics
+  avTf_v <- mean(tf_v, na.rm = TRUE)
+  gradTf_v <- (tf_v[zs_v == max(zs_v)][1] - tf_v[zs_v == min(zs_v)][1]) / (max(zs_v) - min(zs_v))
+  SDTf_v <- sd(tf_v, na.rm = TRUE)
+
+  return(c(avTa_h = avTa_h, gradTa_h = gradTa_h, SDTa_h = SDTa_h, avTa_v = avTa_v, gradTa_v = gradTa_v, SDTa_v = SDTa_v, avTf_h = avTf_h, gradTf_h = gradTf_h, SDTf_h = SDTf_h, avTf_v = avTf_v, gradTf_v = gradTf_v, SDTf_v = SDTf_v))
 }
 
 
@@ -138,19 +162,66 @@ sobol_outputs_all <- with_progress({
 plan(sequential)
 
 # Metric extraction
-sobol_outputs_metric1 <- map_dbl(sobol_outputs_all, "avT")
-sobol_outputs_metric2 <- map_dbl(sobol_outputs_all, "gradT")
-sobol_outputs_metric3 <- map_dbl(sobol_outputs_all, "SDT")
+# horizontal gradient
+# air temperature
+sobol_outputs_metric1 <- map_dbl(sobol_outputs_all, "avTa_h")
+sobol_outputs_metric2 <- map_dbl(sobol_outputs_all, "gradTa_h")
+sobol_outputs_metric3 <- map_dbl(sobol_outputs_all, "SDTa_h")
 
 sobol_metric1 <- tell(sobol_design, sobol_outputs_metric1)
 sobol_metric2 <- tell(sobol_design, sobol_outputs_metric2)
 sobol_metric3 <- tell(sobol_design, sobol_outputs_metric3)
 
+# forest surface temperature
+sobol_outputs_metric4 <- map_dbl(sobol_outputs_all, "avTf_h")
+sobol_outputs_metric5 <- map_dbl(sobol_outputs_all, "gradTf_h")
+sobol_outputs_metric6 <- map_dbl(sobol_outputs_all, "SDTf_h")
+
+sobol_metric4 <- tell(sobol_design, sobol_outputs_metric4)
+sobol_metric5 <- tell(sobol_design, sobol_outputs_metric5)
+sobol_metric6 <- tell(sobol_design, sobol_outputs_metric6)
+
+# vertical gradient
+# air temperature
+sobol_outputs_metric7 <- map_dbl(sobol_outputs_all, "avTa_v")
+sobol_outputs_metric8 <- map_dbl(sobol_outputs_all, "gradTa_v")
+sobol_outputs_metric9 <- map_dbl(sobol_outputs_all, "SDTa_v")
+
+sobol_metric7 <- tell(sobol_design, sobol_outputs_metric7)
+sobol_metric8 <- tell(sobol_design, sobol_outputs_metric8)
+sobol_metric9 <- tell(sobol_design, sobol_outputs_metric9)
+
+# forest surface temperature
+sobol_outputs_metric10 <- map_dbl(sobol_outputs_all, "avTf_v")
+sobol_outputs_metric11 <- map_dbl(sobol_outputs_all, "gradTf_v")
+sobol_outputs_metric12 <- map_dbl(sobol_outputs_all, "SDTf_v")
+
+sobol_metric10 <- tell(sobol_design, sobol_outputs_metric10)
+sobol_metric11 <- tell(sobol_design, sobol_outputs_metric11)
+sobol_metric12 <- tell(sobol_design, sobol_outputs_metric12)
+
 ##########
 # SAVING #
 ##########
 
-saveRDS(sobol_metric1, file = file.path(output_path, paste0(output_name, "_avT.rds")))
-saveRDS(sobol_metric2, file = file.path(output_path, paste0(output_name, "_gradT.rds")))
-saveRDS(sobol_metric3, file = file.path(output_path, paste0(output_name, "_SDT.rds")))
+# horizontal gradient
+# air temperature
+saveRDS(sobol_metric1, file = file.path(output_path, paste0(output_name, "_avTa_h.rds")))
+saveRDS(sobol_metric2, file = file.path(output_path, paste0(output_name, "_gradTa_h.rds")))
+saveRDS(sobol_metric3, file = file.path(output_path, paste0(output_name, "_SDTa_h.rds")))
 
+# forest surface temperature
+saveRDS(sobol_metric4, file = file.path(output_path, paste0(output_name, "_avTf_h.rds")))
+saveRDS(sobol_metric5, file = file.path(output_path, paste0(output_name, "_gradTf_h.rds")))
+saveRDS(sobol_metric6, file = file.path(output_path, paste0(output_name, "_SDTf_h.rds")))
+
+# vertical gradient
+# air temperature
+saveRDS(sobol_metric7, file = file.path(output_path, paste0(output_name, "_avTa_v.rds")))
+saveRDS(sobol_metric8, file = file.path(output_path, paste0(output_name, "_gradTa_v.rds")))
+saveRDS(sobol_metric9, file = file.path(output_path, paste0(output_name, "_SDTa_v.rds")))
+
+# forest surface temperature
+saveRDS(sobol_metric10, file = file.path(output_path, paste0(output_name, "_avTf_v.rds")))
+saveRDS(sobol_metric11, file = file.path(output_path, paste0(output_name, "_gradTf_v.rds")))
+saveRDS(sobol_metric12, file = file.path(output_path, paste0(output_name, "_SDTf_v.rds")))

@@ -88,7 +88,7 @@ macro_df <- bind_rows(
         x           = x,
         temperature = Tair - 273.15,
         id       = "Macro",
-        Source       = "Model",
+        Source       = "Observed",
         Position = "Macro",
         time        = model_times[i]
       )
@@ -103,7 +103,7 @@ tomst_core_df <- bind_rows(
         x           = 135 - D_edge,
         temperature = Tair,
         id       = "TOMST-Core",
-        Source       = "TOMST",
+        Source       = "Observed",
         Position = "Core",
         time        = tomst_times[i]
       ) %>%
@@ -119,7 +119,7 @@ tomst_edge_df <- bind_rows(
         x           = 135 - D_edge,
         temperature = Tair,
         id       = "TOMST-Edge",
-        Source       = "TOMST",
+        Source       = "Observed",
         Position = "Edge",
         time        = tomst_times[i]
       ) %>%
@@ -142,19 +142,19 @@ combined_df$Position <- factor(combined_df$Position, levels = c("Macro", "Edge",
 timeseries = ggplot(combined_df, aes(x = time, y = temperature, color = Position, linetype = Source)) +
   geom_point() +
   geom_smooth(method = "loess", se = FALSE) +  # Loess curve without confidence interval
-  labs(title = "Temperature time fluctuations",
+  labs(#title = "Temperature time fluctuations",
        x = "Time",
        y = "Temperature (°C)",
        color = "Position",
        linetype = "Source") +
   scale_color_manual(
-    values = c("Macro" = "red4",
-                "Core" = "cornflowerblue",
-                "Edge" = "orange"
+    values = c("Macro" = "#F28C8C",
+                "Core" = "#8CB4E1",
+                "Edge" = "#F7C59F"
                )) +
   scale_linetype_manual(values = c(
     "Model" = "solid",
-    "TOMST" = "dotted")) +
+    "Observed" = "dotted")) +
   guides(
     linetype = guide_legend(override.aes = list(color = "black"))
   ) +
@@ -162,9 +162,9 @@ timeseries = ggplot(combined_df, aes(x = time, y = temperature, color = Position
   theme(
     plot.title = element_text(size = 20, face = "bold"),
     axis.title = element_text(size = 18),
-    axis.text = element_text(size = 12),
-    legend.title = element_text(size = 14),
-    legend.text = element_text(size = 12)
+    axis.text = element_text(size = 16),
+    legend.title = element_text(size = 17),
+    legend.text = element_text(size = 16)
   )
 print(timeseries)
 
