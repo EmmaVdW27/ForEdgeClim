@@ -23,6 +23,6 @@ Output/*
 !Output/horizontal_transect_2.png
 !Output/vertical_transect.png
 Scripts/older_scripts/
-Scripts/combine_figures
+Scripts/combine_figures.R
 
 
