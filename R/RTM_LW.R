@@ -1,26 +1,25 @@
 #' Two-stream RTM for longwave radiation and for a single column existing of layers/voxels with density values (%).
-#' This model is inspired by the longwave RTM of the Ecosystem Demography model.
+#' This model is inspired by the longwave RTM of the Ecosystem Demography model (ED 2.2).
 #' @param soil_reflect Soil albedo (%)
 #' @param density Density of each layer (%)
-#' @param temperature Temperature of each layer (K)
-#' @param F_sky_diff Diffuse radiation (W/m2)
-#' @param Kd Diffuse extinction coefficient, per unit density
-#' @param omega Scattering coefficient
-#' @param beta Fraction of scattering in the backward direction for diffuse radiation (%)
-#' @return Dataframe containing the combined results of the 2D shortwave RTM
+#' @param F_sky_lw Longwave radiation at top canopy (W/m2)
+#' @param temperature Forest surface temperature of each layer (K)
+#' @param T_soil Soil temperature at 8 cm depth (K)
+#' @param T_macro Macrotemperature outside the forest (K)
+#' @param Kd Longwave extinction coefficient, per unit density
+#' @param omega Longwave scattering coefficient
+#' @param beta Fraction of scattering in the backward direction for longwave radiation (%)
+#' @return Dataframe containing the combined results of the 2D longwave RTM
 #' @export
 
-lw_two_stream <- function(soil_reflect, density, F_sky_lw, temperature, T_soil,
-                          T_macro,
-                          Kd,
-                          omega, beta) {
+lw_two_stream <- function(soil_reflect, density, F_sky_lw, temperature, T_soil, T_macro, Kd, omega, beta) {
   omega_g = soil_reflect
   F_sky_diff = F_sky_lw
 
-  # Calculate black body emission at the temperature of the layer
-  # Black body emission of atmosphere is defined to be 0 because F_sky_lw has already been defined as above canopy input
+  # Calculate black body emission at the temperature of the layer.
+  # Black body emission of atmosphere is defined to be 0 because F_sky_lw has already been defined as above canopy input.
   # Black body emission is per surface unit, so a density correction must be applied.
-  # Like this, zero-density values with no structure or surface don't produce BB emission (as eg the atmosphere).
+  # Like this, zero-density values with no structure or surface don't produce BB emission (as e.g. the atmosphere).
   black = c(density*e_forest*sigma_SB * temperature^4,0)
 
   # Number of (cohort) layers
@@ -31,12 +30,12 @@ lw_two_stream <- function(soil_reflect, density, F_sky_lw, temperature, T_soil,
   # mu atmosphere (density = 0, no forest structure) is defined to be 1
   mu <- ifelse(density == 0, 1, 1 / (Kd * density))  # Inverse optical depth diffuse radiation
 
-  # Initialisation matrices
+  # Initialization matrices
   S <- matrix(0, nrow = 2 * n + 2, ncol = 2 * n + 2)
   y <- numeric(2 * n + 2)
 
-  # black body emission of the soil
-  # emissivity of soil = absorption of soil for lw radiation => emissivity = 1 - omega_g
+  # Black body emission of the soil
+  # Emissivity of soil = absorption of soil for lw radiation => emissivity = 1 - omega_g
   black_g = (1-omega_g)*sigma_SB*T_soil^4
 
   # Auxiliary variables
@@ -51,7 +50,7 @@ lw_two_stream <- function(soil_reflect, density, F_sky_lw, temperature, T_soil,
   # no Kappa and Delta as in shortwave RTM
 
   # Boundary conditions
-  y[2*n+2] <- F_sky_diff - black[n+1] # Incoming diffuse radiation at top canopy
+  y[2*n+2] <- F_sky_diff - black[n+1] # Incoming longwave radiation at top canopy
   y[1] <- (1 - omega_g) * black_g - (1 - omega_g)*black[1]
 
   S[2 * n + 2, 2 * n + 1] <- gamma_plus[n+1]
@@ -87,7 +86,7 @@ lw_two_stream <- function(soil_reflect, density, F_sky_lw, temperature, T_soil,
   # Solving matrix equation using arma::solve from C++
   x <- solve_rtm(S, y)
 
-  # Calculate diffuse radiative fluxes
+  # Calculate longwave radiative fluxes
   # Radiative fluxes refer to the rate of energy transfer by electromagnetic radiation through a surface or area,
   # typically measured in W/m², encompassing all or specific wavelengths (e.g., shortwave or longwave radiation).
   # These values are mainly of interest when modelling e.g. energy balance, heat fluxes...
@@ -104,10 +103,9 @@ lw_two_stream <- function(soil_reflect, density, F_sky_lw, temperature, T_soil,
     x[k2] * gamma_plus[indices] * exp(lambda[indices] * density[indices]) +
     black[indices]
 
-
   # Calculate light levels and netto absorbed or emitted radiation
   # Light levels refer to the intensity of photosynthetically active radiation (PAR, 400-700 nm) available for plants.
-  # These values are mainly of interest when modelling e.g. photosyntheses, plant growth, schadow structure...
+  # These values are mainly of interest when modelling e.g. photosynthesis, plant growth, shadow structure...
   indices2 <- seq_len(n)
   kp1 <- indices2 + 1
 

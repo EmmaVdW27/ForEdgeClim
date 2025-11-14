@@ -60,73 +60,31 @@ p_RMSE <- ggplot() +
             linewidth = 1, linetype = "dashed") +
 
   geom_vline(xintercept = unique(offspring_log$iter),
-             linetype = "dashed", colour = "grey50") +
+             linetype = "dashed", colour = "orange") +
 
-  scale_colour_manual(values = c("All offsprings" = "cornflowerblue",
-                                 "Best offspring per generation" = alpha("#f38ba8", 0.5))) +
+  scale_colour_manual(values = c("All offsprings" = "blue",
+                                 "Best offspring per generation" = alpha("red", 0.5))) +
   # Captions
-  labs(x = "Generation (with offspring jitter)",
+  labs(x = "Generation",
        y = "RMSE (°C)",
-       title = "Offspring RMSE between observed and modelled temperature",
+       title = "a) RMSE evolution over generations",
        colour = NULL) +
   theme_bw(base_size = 14) +
   theme(
     legend.position = "top",
-    legend.text = element_text(size = 14),
-    plot.title = element_text(size = 20, face = "bold"),
-    axis.title = element_text(size = 18),
-    axis.text = element_text(size = 14)
+    legend.text = element_text(size = 40),
+    plot.title = element_text(size = 40),
+    axis.title = element_text(size = 40),
+    axis.text = element_text(size = 40)
   )
 
 print(p_RMSE)
-ggsave(paste0(output_path, "RMSE_", season, ".png"), plot = p_RMSE, width = 10, height = 6, dpi = 300)
+ggsave(paste0(output_path, "RMSE_", season, ".png"), plot = p_RMSE, width = 16, height = 10, dpi = 500)
 
 
-# PLOT 2: Global step size over generations
-# ------
-
-p_step_size <- generation_log %>%
-  ggplot(aes(x = iter, y = sigma_proxy)) +
-  geom_line(colour = "cornflowerblue") + geom_point(colour = "cornflowerblue") +
-  scale_x_continuous(breaks = seq(min(generation_log$iter), max(generation_log$iter), by = 1)) +
-  labs(x = "Generation", y = "Step size (unitless)", title = "Global step size over generations",
-       subtitle = "(Mean parameter SD is used as a proxy for global step size.)") +
-  theme_bw(base_size = 12)
-print(p_step_size)
-ggsave(paste0(output_path, "step_size_", season, ".png"), plot = p_step_size, width = 10, height = 6, dpi = 300)
 
 
-# PLOT 3: Population spread over generations
-# ------
-
-p_population_spread <- generation_log %>%
-  ggplot(aes(x = iter, y = spread_mean)) +
-  geom_line(colour = "cornflowerblue") + geom_point(colour = "cornflowerblue") +
-  scale_x_continuous(breaks = seq(min(generation_log$iter), max(generation_log$iter), by = 1)) +
-  labs(x = "Generation", y = "Population spread (unitless)",
-       title = "Population spread over generations",
-       subtitle = "(Square root over mean eigenvalue of covariance matrix is used as a proxy for population spread.\n An eigenvalue is the weight of a search direction within the parameter space.)") +
-  theme_bw(base_size = 12)
-print(p_population_spread)
-ggsave(paste0(output_path, "population_spread_", season, ".png"), plot = p_population_spread, width = 10, height = 6, dpi = 300)
-
-
-# PLOT 4: Change in population center between generations
-# ------
-generation_log_plot <- generation_log %>%
-  mutate(iter_mid = iter - 0.5)  # zet het punt tussen huidige en vorige generatie
-
-p_center_change <- generation_log_plot %>%
-  ggplot(aes(x = iter_mid, y = mean_step)) +
-  geom_line(colour = "cornflowerblue") + geom_point(colour = "cornflowerblue") +
-  scale_x_continuous(breaks = seq(min(generation_log$iter), max(generation_log$iter), by = 1)) +
-  labs(x = "Generation", y = "Change", title = "Change in population center from one generation to the next",
-                subtitle = "(Euclidean distance between consecutive generation means is used as a proxy for this change.)") +
-  theme_bw(base_size = 12)
-print(p_center_change)
-ggsave(paste0(output_path, "center_change_", season, ".png"), plot = p_center_change, width = 10, height = 6, dpi = 300)
-
-# PLOT 5: 2D plot in PCA space
+# PLOT 2: 2D plot in PCA space
 # ------
 
 param_cols <- setdiff(names(offspring_log), c("eval_id","iter","offspring_id","rmse","time"))
@@ -146,31 +104,76 @@ scores$iter <- iters_all
 
 # Facet plot per generation
 p_PCA_space <- ggplot(scores, aes(x = PC1, y = PC2)) +
-  geom_point(alpha = 0.5, size = 1.5, colour = "cornflowerblue") +
-  stat_ellipse(type = "norm", level = 0.95, colour = "#f38ba8", linewidth = 1) +
+  geom_point(alpha = 0.5, size = 1.5, colour = "blue") +
+  stat_ellipse(type = "norm", level = 0.95, colour = "red", linewidth = 1) +
   coord_equal() +
-  facet_wrap(~iter) +#, ncol = 5) +
+  facet_wrap(~iter, ncol = 8) +
   labs(
-    title = "CMA-ES population spread per generation",
-    subtitle = "Points = offspring,\nEllipse = 95% spread",
-    x = "PC1", y = "PC2"
+    title = "b) PCA on parameter space",
+    #subtitle = "Points = offspring,\nEllipse = 95% spread",
+    x = "PC1", y = "\nPC2"
   ) +
   theme_bw(base_size = 14) +
   theme(
-    plot.title = element_text(size = 20, face = "bold"),
-    plot.subtitle = element_text(size = 16),
-    axis.title = element_text(size = 18),
-    axis.text = element_text(size = 14),
-    strip.text = element_text(size = 14) # facet labels
+    plot.title = element_text(size = 40),
+    axis.title = element_text(size = 40),
+    axis.text = element_text(size = 40),
+    strip.text = element_text(size = 40) # facet labels
   ) +
-  ggh4x::force_panelsizes(
-    cols = rep(unit(30, "mm"), 6),
-    rows = rep(unit(30, "mm"), ceiling(n_distinct(scores$iter)/6))
-  )
+  scale_x_continuous(labels = function(x) rep(" ", length(x))) +
+  scale_y_continuous(labels = function(x) rep(" ", length(x)))
 
 
 print(p_PCA_space)
-ggsave(paste0(output_path, "PCA_space_", season, ".png"), plot = p_PCA_space, width = 13, height = 13, dpi = 300)
+ggsave(paste0(output_path, "PCA_space_", season, ".png"), plot = p_PCA_space, width = 16, height = 14, dpi = 500)
+
+#
+# # PLOT 3: Global step size over generations
+# # ------
+#
+# p_step_size <- generation_log %>%
+#   ggplot(aes(x = iter, y = sigma_proxy)) +
+#   geom_line(colour = "cornflowerblue") + geom_point(colour = "cornflowerblue") +
+#   scale_x_continuous(breaks = seq(min(generation_log$iter), max(generation_log$iter), by = 1)) +
+#   labs(x = "Generation", y = "Step size (unitless)", title = "Global step size over generations",
+#        subtitle = "(Mean parameter SD is used as a proxy for global step size.)") +
+#   theme_bw(base_size = 12)
+# print(p_step_size)
+# ggsave(paste0(output_path, "step_size_", season, ".png"), plot = p_step_size, width = 10, height = 6, dpi = 300)
+#
+#
+# # PLOT 4: Population spread over generations
+# # ------
+#
+# p_population_spread <- generation_log %>%
+#   ggplot(aes(x = iter, y = spread_mean)) +
+#   geom_line(colour = "cornflowerblue") + geom_point(colour = "cornflowerblue") +
+#   scale_x_continuous(breaks = seq(min(generation_log$iter), max(generation_log$iter), by = 1)) +
+#   labs(x = "Generation", y = "Population spread (unitless)",
+#        title = "Population spread over generations",
+#        subtitle = "(Square root over mean eigenvalue of covariance matrix is used as a proxy for population spread.\n An eigenvalue is the weight of a search direction within the parameter space.)") +
+#   theme_bw(base_size = 12)
+# print(p_population_spread)
+# ggsave(paste0(output_path, "population_spread_", season, ".png"), plot = p_population_spread, width = 10, height = 6, dpi = 300)
+#
+#
+# # PLOT 5: Change in population center between generations
+# # ------
+# generation_log_plot <- generation_log %>%
+#   mutate(iter_mid = iter - 0.5)  # zet het punt tussen huidige en vorige generatie
+#
+# p_center_change <- generation_log_plot %>%
+#   ggplot(aes(x = iter_mid, y = mean_step)) +
+#   geom_line(colour = "cornflowerblue") + geom_point(colour = "cornflowerblue") +
+#   scale_x_continuous(breaks = seq(min(generation_log$iter), max(generation_log$iter), by = 1)) +
+#   labs(x = "Generation", y = "Change", title = "Change in population center from one generation to the next",
+#        subtitle = "(Euclidean distance between consecutive generation means is used as a proxy for this change.)") +
+#   theme_bw(base_size = 12)
+# print(p_center_change)
+# ggsave(paste0(output_path, "center_change_", season, ".png"), plot = p_center_change, width = 10, height = 6, dpi = 300)
+
+
+
 
 end_analysis <- Sys.time()
 cat(sprintf('\nTotal running time = %.2f s\n', as.numeric(end_analysis - start_analysis, units = 'secs')))

@@ -1,4 +1,4 @@
-#' Generate a virtual sctructural grid with trees
+#' Generate a virtual structural grid with trees
 #'
 #' @param season Season as string: "summer", "winter", "spring", "autumn"
 #' @param output_folder Map to save 3D-plot (Default "Output/")
@@ -10,13 +10,13 @@
 #' @export
 generate_fictive_grid <- function(season) {
 
-  # Typical canopy height range for a tree (global variables)
+  # Typical canopy height range for a tree
   canopy_min_height <- 10
   canopy_max_height <- 18
 
   set.seed(123)
 
-  # Grid dimensies
+  # Grid dimensions
   x_dim <- 135  # Length of transect in x-direction (m)
   y_dim <- 30   # Width of transect in y-direction (m)
   z_dim <- 30   # Maximum height of trees (m)

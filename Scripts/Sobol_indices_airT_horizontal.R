@@ -3,6 +3,8 @@
 # seasons and time points are merged together to get an overview of the
 # Quantities of Interest (4 seasons x 3 time points x 3 metrics).
 # This script runs for the horizontal line, along the central Y-line at Z = 1 m height.
+# This script analyzes the air temperature. Sobol_indices_forest_surfaceT_horizontal.R is similar,
+# but for the forest surface temperature.
 ###############################################################################
 
 
@@ -40,7 +42,7 @@ files_info <- tribble(
   "400samples_25parameters_12h_13012025_avTa_h.rds",     "Wi_No_≈T",
   "400samples_25parameters_12h_13012025_SDTa_h.rds",     "Wi_No_σT",
   "400samples_25parameters_12h_13012025_gradTa_h.rds",   "Wi_No_∇T",
-  # spring
+  # spring files
     # night
   "400samples_25parameters_01h_30042025_avTa_h.rds",     "Sp_Ni_≈T",
   "400samples_25parameters_01h_30042025_SDTa_h.rds",     "Sp_Ni_σT",
@@ -53,7 +55,7 @@ files_info <- tribble(
   "400samples_25parameters_12h_30042025_avTa_h.rds",     "Sp_No_≈T",
   "400samples_25parameters_12h_30042025_SDTa_h.rds",     "Sp_No_σT",
   "400samples_25parameters_12h_30042025_gradTa_h.rds",   "Sp_No_∇T",
-  # summer
+  # summer files
     # night
   "400samples_25parameters_01h_07072023_avTa_h.rds",     "Su_Ni_≈T",
   "400samples_25parameters_01h_07072023_SDTa_h.rds",     "Su_Ni_σT",
@@ -94,25 +96,25 @@ param_order <- c(
 )
 # Focused parameter sequence in order from most influenteal to least influential (to be plot in this order)
 focus_params <- c("infl_macro", "infl_soil", "g_macro",
-                  "infl_forest", "k_soil", "g_soil",
+                  "k_soil", "infl_forest", "g_soil",
                   "h", "p_ground", "g_forest")
 # Shortwave parameter sequence
 SW_params <- c("betad", "beta0", "omega", "Kd_v", "Kb_v", "omega_g_v", "Kd_h", "Kb_h", "omega_g_h")
 # Longwave parameter sequence
 LW_params <- c("e_forest", "beta_lw", "omega_lw", "Kd_lw_v", "omega_g_lw_v", "Kd_lw_h", "omega_g_lw_h")
 
-# Focused color palette
 focus_colors = c(
-    "#8CB4E1",  # 1 - koel blauw
-    "#F7C59F",  # 2 - zacht oranje
-    "#A7C7E7",  # 3 - lichter blauw
-    "#F7A0A0",  # 4 - pastelrood
-    "#C2D9EC",  # 5 - licht pastelblauw
-    "#F9B48E",  # 6 - zalmoranje
-    "#DDECF1",  # 7 - bijna witblauw / neutraal
-    "#F28C8C",  # 8 - koraalrood
-    "#F7D8B4"   # 9 - zandig beige
-  )
+  "blue",
+  "orange",
+  "red",
+  "blue3",
+  "orange3",
+  "red3",
+  "blue4",
+  "orange4",
+  "red4"
+)
+
 
 
 # Color palette
@@ -124,14 +126,14 @@ all_colors <- c(
 
 # legend labels
 labels_latex <- c(
-  "infl_macro"    = TeX("$I_m$"),
-  "infl_soil"     = TeX("$I_s$"),
-  "g_macro"       = TeX("$g_m$"),
+  "infl_macro"    = TeX("$i_m$"),
+  "infl_soil"     = TeX("$i_s$"),
+  "g_macro"       = TeX("$i_m$"),
   "k_soil"        = TeX("$k_s$"),
   "infl_forest"   = TeX("$I_f$"),
   "g_soil"        = TeX("$g_s$"),
   "h"             = TeX("$h$"),
-  "p_ground"      = TeX("$p_g$"),
+  "p_ground"      = TeX("$p$"),
   "g_forest"      = TeX("$g_f$"),
   "SW parameters" = "SW parameters",
   "LW parameters" = "LW parameters"
@@ -245,31 +247,29 @@ p_condition_focused_n <- ggplot(mean_combined_focusedplus_n, aes(x = mean_index,
   facet_wrap(~ group, scales = "free_y", ncol = 1) +
   scale_fill_manual(values = all_colors, labels = labels_latex) +
   labs(
-    #title = "Parameter contribution to condition variance (horizontal line)",
+    title = "a) Influence on air temperature",
     x = "Average normalized total-order Sobol-index",
     y = "Condition",
     fill = "Parameter"#,
     #caption = "≈T = average temperature | σT = standard deviation on temperature | ∇T = temperature gradient"
   ) +
   theme_bw(base_size = 14) +
-  guides(fill = guide_legend(nrow = 1, reverse = TRUE)) +   # één enkele rij
+  guides(fill = guide_legend(ncol = 1, reverse = TRUE)) +
   theme(
-    plot.title = element_text(face = "bold"),
-    axis.title.x    = element_text(face = "bold", size = 18),
-    axis.title.y    = element_text(face = "bold", size = 18),
-    axis.text.x     = element_text(size = 16),
-    axis.text.y     = element_text(size = 16),
-    legend.position = "top",        # legende bovenaan
-    legend.direction = "horizontal",# horizontaal
-    legend.title    = element_text(size = 17, face = "bold"),
-    legend.text     = element_text(size = 16),
-    legend.key.size = unit(1.0, "cm"),  # grootte van de kleurbalkjes
-    legend.spacing.x = unit(0.5, "cm"), # wat extra ruimte tussen legendelabels
-    strip.text = element_text(face = "bold"),
+    plot.title = element_text(size = 40),
+    axis.title    = element_text(size = 40),
+    axis.text     = element_text(size = 40),
+    legend.position = "none",
+    legend.direction = "vertical",
+    legend.title    = element_blank(), #element_text(size = 40),
+    legend.text     = element_blank(), #element_text(size = 40),
+    legend.key.size = unit(1.0, "cm"),
+    legend.spacing.x = unit(0.5, "cm"),
+    strip.text = element_text(size = 40),
     plot.caption = element_text(hjust = 0)
   )
 
-ggsave(paste0(output_path_plots, output_plot_focused_parameters_by_condition_normalized), plot = p_condition_focused_n, width = 12, height = 10, dpi = 500)
+ggsave(paste0(output_path_plots, output_plot_focused_parameters_by_condition_normalized), plot = p_condition_focused_n, width = 16, height = 14, dpi = 500)
 
 
 
@@ -447,20 +447,20 @@ print(range_season_rank)
 #------------------------------------------------------------------------------
 
 # export tables
-write_csv(top3_per_label,          file.path(output_path_numbers, "top3_per_condition_h.csv"))
-write_csv(concentration_per_label, file.path(output_path_numbers, "concentration_per_condition_h.csv"))
-write_csv(process_share_per_label, file.path(output_path_numbers, "process_share_per_condition_h.csv"))
+write_csv(top3_per_label,          file.path(output_path_numbers, "top3_per_condition_ah.csv"))
+write_csv(concentration_per_label, file.path(output_path_numbers, "concentration_per_condition_ah.csv"))
+write_csv(process_share_per_label, file.path(output_path_numbers, "process_share_per_condition_ah.csv"))
 
-write_csv(avg_param_by_metric,     file.path(output_path_numbers, "avg_param_by_metric_h.csv"))
-write_csv(avg_param_by_moment,     file.path(output_path_numbers, "avg_param_by_moment_h.csv"))
-write_csv(avg_param_by_season,     file.path(output_path_numbers, "avg_param_by_season_h.csv"))
+write_csv(avg_param_by_metric,     file.path(output_path_numbers, "avg_param_by_metric_ah.csv"))
+write_csv(avg_param_by_moment,     file.path(output_path_numbers, "avg_param_by_moment_ah.csv"))
+write_csv(avg_param_by_season,     file.path(output_path_numbers, "avg_param_by_season_ah.csv"))
 
-write_csv(avg_process_by_metric,   file.path(output_path_numbers, "avg_process_by_metric_h.csv"))
-write_csv(avg_process_by_moment,   file.path(output_path_numbers, "avg_process_by_moment_h.csv"))
-write_csv(avg_process_by_season,   file.path(output_path_numbers, "avg_process_by_season_h.csv"))
+write_csv(avg_process_by_metric,   file.path(output_path_numbers, "avg_process_by_metric_ah.csv"))
+write_csv(avg_process_by_moment,   file.path(output_path_numbers, "avg_process_by_moment_ah.csv"))
+write_csv(avg_process_by_season,   file.path(output_path_numbers, "avg_process_by_season_ah.csv"))
 
-write_csv(rank_consistency_metric, file.path(output_path_numbers, "rank_consistency_metric_h.csv"))
-write_csv(rank_consistency_moment, file.path(output_path_numbers, "rank_consistency_moment_h.csv"))
-write_csv(rank_consistency_season, file.path(output_path_numbers, "rank_consistency_season_h.csv"))
+write_csv(rank_consistency_metric, file.path(output_path_numbers, "rank_consistency_metric_ah.csv"))
+write_csv(rank_consistency_moment, file.path(output_path_numbers, "rank_consistency_moment_ah.csv"))
+write_csv(rank_consistency_season, file.path(output_path_numbers, "rank_consistency_season_ah.csv"))
 
 

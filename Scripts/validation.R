@@ -1,5 +1,5 @@
 ############################################################################################
-# This script validates ForEdgeClim's model output with observational TOMST TMS sensors.
+# This script validates ForEdgeClim's model output with observational TOMST TMS-4 sensors.
 #
 # Author: Emma Van de Walle - Q-ForestLab
 ############################################################################################
@@ -17,7 +17,7 @@ suppressPackageStartupMessages({
   library(future.apply)
 })
 
-# Parallelisation on HPC (supercomputer)
+# Parallelization on HPC (supercomputer)
 cores <- as.numeric(Sys.getenv("PBS_NUM_PPN", unset = 1))
 plan(multicore, workers = cores)
 print(paste("Using", availableCores(), "cores."))

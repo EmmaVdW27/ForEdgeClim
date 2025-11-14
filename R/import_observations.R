@@ -1,6 +1,7 @@
 #' Function to import RMI national weather station observations (macro
 #' temperature and incoming longwave radiation)
 #'
+#' @param datetime yyyy-mm-dd hh:mm:ss in UTC
 #' @return macro temperature and downward from sky longwave radiation
 #' @importFrom lubridate ymd_hms ymd_hm floor_date
 #' @importFrom dplyr mutate group_by summarise
@@ -37,9 +38,10 @@ import_RMI_observations <- function(datetime){
 
 }
 
-#' Function to import macro temperature from Plant Ecology lab
+#' Function to import macro temperature from other platform
 #'
-#' @return macro temperature and downward longwave radiation
+#' @param datetime yyyy-mm-dd hh:mm:ss in UTC
+#' @return macro temperature
 #' @importFrom dplyr mutate filter summarise
 #' @importFrom lubridate dmy_hm with_tz hours
 #' @importFrom readr read_delim col_character locale cols col_double
@@ -81,8 +83,9 @@ import_PE_observations <- function(datetime){
 
 }
 
-#' Function to import Delta-T pyranometer observations (direct and diffuse light)
+#' Function to import Delta-T pyranometer observations (direct and diffuse shortwave radiation)
 #'
+#' @param datetime yyyy-mm-dd hh:mm:ss in UTC
 #' @return Direct solar beam and diffuse radiation
 #' @importFrom lubridate ymd_hms hours hour
 #' @export
@@ -116,13 +119,12 @@ import_pyr_observations <- function(datetime){
   F_sky_diff_init <<- mean(pyr_filtered$diffuse)/2                        # Diffuse radiation (W/m2)
   # macro_temp <<-  mean(pyr_filtered$temp) + 273.15 # in Kelvin
 
-
 }
 
-#' Function to import TOMST observations (soil temperature at tower and
-#' observations along the transect)
+#' Function to import TOMST observations
 #'
-#' @return T_soil_deep The soil temperature at 8cm deep at the position of the tower
+#' @param datetime yyyy-mm-dd hh:mm:ss in UTC
+#' @return T_soil_deep The averaged soil temperature at 8 cm depth along the transect
 #' @export
 import_soil_temperature <- function(datetime){
 
@@ -145,18 +147,6 @@ import_soil_temperature <- function(datetime){
   # Extract TOMST sensors of interest and output columns for vertical measurements
   TOMST_air_output_vertical <- filtered_data_vertical[grepl("^V", filtered_data_vertical$name) | filtered_data_vertical$name == "C75",
                                                       c("Tair", "height")]
-
-
-
-  # To define multiple T_soil_deep along the transect
-  # x_new = 1:135
-  # Tsoi_interp <- data.frame(
-  #   x = x_new,
-  #   Tsoi = approx(x = 135 - TOMST_air_output$D_edge, y = TOMST_air_output$Tsoi, xout = x_new)$y
-  # )
-  #
-  # # Repeat the Tsoi value closest to the edge 15 times to cover the soil between forest edge and max X (over the street)
-  # T_soil_deep <<- c(Tsoi_interp$Tsoi, rep(Tsoi_interp$Tsoi[length(Tsoi_interp$Tsoi)], 15)) + 273.15
 
   # Save dataframes as CSV
   write.csv(TOMST_air_output, paste0("Data/TOMST_filtered_distance_temp_", format(datetime, "%Y%m%d_%H%M"), ".csv"), row.names = FALSE)

@@ -1,21 +1,18 @@
 #' Two-stream RTM for shortwave radiation and for a single column existing of layers/voxels with density values (%).
-#' This model is inspired by the shortwave RTM of the Ecosystem Demography model.
+#' This model is inspired by the shortwave RTM of the Ecosystem Demography model (ED 2.2).
 #' @param soil_reflect Soil albedo (%)
 #' @param density Density of each layer (%)
 #' @param F_sky_diff Diffuse radiation (W/m2)
 #' @param F_sky_dir Direct beam radiation (W/m2)
 #' @param Kd Diffuse extinction coefficient, per unit density
 #' @param Kb Direct beam extinction coefficient, per unit density
-#' @param omega Scattering coefficient
+#' @param omega Shortwave scattering coefficient
 #' @param beta Fraction of scattering in the backward direction for diffuse radiation (%)
 #' @param beta0 Fraction of scattering in the backward direction for direct beam radiation (%)
 #' @return Dataframe containing the combined results of the 2D shortwave RTM
 #' @export
 
-sw_two_stream <- function(soil_reflect, density,
-                          F_sky_diff, F_sky_dir,
-                          Kd, Kb,
-                          omega, beta, beta0) {
+sw_two_stream <- function(soil_reflect, density, F_sky_diff, F_sky_dir, Kd, Kb, omega, beta, beta0) {
 
   omega_g = soil_reflect
   # Number of (cohort) layers
@@ -27,7 +24,7 @@ sw_two_stream <- function(soil_reflect, density,
   mu0 <- ifelse(density == 0, 1, 1 / (Kb * density)) # Inverse optical depth direct beam radiation
   mu <- ifelse(density == 0, 1, 1 / (Kd * density))  # Inverse optical depth diffuse radiation
 
-  # Initialisation matrices
+  # Initialization matrices
   S <- matrix(0, nrow = 2 * n + 2, ncol = 2 * n + 2)
   y <- numeric(2 * n + 2)
 
@@ -112,7 +109,7 @@ sw_two_stream <- function(soil_reflect, density,
 
   # Calculate light levels and netto absorbed or emitted radiation
   # Light levels refer to the intensity of photosynthetically active radiation (PAR, 400-700 nm) available for plants.
-  # These values are mainly of interest when modelling e.g. photosyntheses, plant growth, schadow structure...
+  # These values are mainly of interest when modelling e.g. photosynthesis, plant growth, shadow structure...
   indices2 <- seq_len(n)
   kp1 <- indices2 + 1
 

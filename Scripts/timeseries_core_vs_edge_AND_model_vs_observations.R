@@ -1,3 +1,12 @@
+###############################################################################
+#
+# In this script, a time series of model and observations is plotted for 6 time
+# points on July 8 2023. For both model and observations, we compare edge vs
+# core positions within the forest transect.
+#
+###############################################################################
+
+
 library(dplyr)
 library(lubridate)
 library(ggplot2)
@@ -11,21 +20,21 @@ model_times <- lubridate::ymd_h(c("2023-07-08 00", "2023-07-08 04", "2023-07-08 
                                   "2023-07-08 12", "2023-07-08 16", "2023-07-08 20"))
 
 res_list   <- list(
-  readRDS("Data/data_for_animation/model_results_0h.rds"),
-  readRDS("Data/data_for_animation/model_results_4h.rds"),
-  readRDS("Data/data_for_animation/model_results_8h.rds"),
-  readRDS("Data/data_for_animation/model_results_12h.rds"),
-  readRDS("Data/data_for_animation/model_results_16h.rds"),
-  readRDS("Data/data_for_animation/model_results_20h.rds")
+  readRDS("Data/model_result_files/model_results_0h.rds"),
+  readRDS("Data/model_result_files/model_results_4h.rds"),
+  readRDS("Data/model_result_files/model_results_8h.rds"),
+  readRDS("Data/model_result_files/model_results_12h.rds"),
+  readRDS("Data/model_result_files/model_results_16h.rds"),
+  readRDS("Data/model_result_files/model_results_20h.rds")
 )
 
 tomst_files <- c(
-  "Data/data_for_animation/TOMST_filtered_distance_temp_0h.csv",
-  "Data/data_for_animation/TOMST_filtered_distance_temp_4h.csv",
-  "Data/data_for_animation/TOMST_filtered_distance_temp_8h.csv",
-  "Data/data_for_animation/TOMST_filtered_distance_temp_12h.csv",
-  "Data/data_for_animation/TOMST_filtered_distance_temp_16h.csv",
-  "Data/data_for_animation/TOMST_filtered_distance_temp_20h.csv"
+  "Data/model_result_files/TOMST_filtered_distance_temp_0h.csv",
+  "Data/model_result_files/TOMST_filtered_distance_temp_4h.csv",
+  "Data/model_result_files/TOMST_filtered_distance_temp_8h.csv",
+  "Data/model_result_files/TOMST_filtered_distance_temp_12h.csv",
+  "Data/model_result_files/TOMST_filtered_distance_temp_16h.csv",
+  "Data/model_result_files/TOMST_filtered_distance_temp_20h.csv"
 )
 
 tomst_times <- model_times
@@ -111,7 +120,7 @@ tomst_core_df <- bind_rows(
   })
 )
 
-# TOMST core data in long-form
+# TOMST edge data in long-form
 tomst_edge_df <- bind_rows(
   lapply(seq_along(tomst_files), function(i) {
     read.csv(tomst_files[i]) %>%
@@ -130,7 +139,7 @@ tomst_edge_df <- bind_rows(
 
 # combine dataframes
 combined_df <- bind_rows(model_core_df, model_edge_df, tomst_core_df, tomst_edge_df, macro_df)
-combined_df$time <- as.POSIXct(combined_df$time, format = "%Y-%m-%d %H:%M:%S")  # Pas dit format aan indien nodig
+combined_df$time <- as.POSIXct(combined_df$time, format = "%Y-%m-%d %H:%M:%S")
 combined_df$Position <- factor(combined_df$Position, levels = c("Macro", "Edge", "Core"))
 
 
@@ -143,29 +152,44 @@ timeseries = ggplot(combined_df, aes(x = time, y = temperature, color = Position
   geom_point() +
   geom_smooth(method = "loess", se = FALSE) +  # Loess curve without confidence interval
   labs(#title = "Temperature time fluctuations",
-       x = "Time",
+       x = "Hour (UTC)",
        y = "Temperature (°C)",
        color = "Position",
        linetype = "Source") +
   scale_color_manual(
-    values = c("Macro" = "#F28C8C",
-                "Core" = "#8CB4E1",
-                "Edge" = "#F7C59F"
+    values = c("Macro" = "red",
+                "Core" = "blue",
+                "Edge" = "orange"
                )) +
   scale_linetype_manual(values = c(
     "Model" = "solid",
     "Observed" = "dotted")) +
+  scale_x_datetime(
+    date_labels = "%H",
+    date_breaks = "4 hour",
+    expand = c(0, 0),
+    limits = c(
+      floor_date(min(combined_df$time), "day"),            # start at 00:00
+      floor_date(min(combined_df$time), "day") + hours(20) # stop at 20:00
+    )
+  ) +
   guides(
-    linetype = guide_legend(override.aes = list(color = "black"))
+    color = guide_legend(order = 1, title = "Position", direction = "horizontal"),
+    linetype = guide_legend(order = 2, title = "Source", direction = "horizontal",
+                            override.aes = list(color = "black"))
   ) +
   theme_bw() +
   theme(
-    plot.title = element_text(size = 20, face = "bold"),
-    axis.title = element_text(size = 18),
-    axis.text = element_text(size = 16),
-    legend.title = element_text(size = 17),
-    legend.text = element_text(size = 16)
+    plot.title = element_text(size = 35, face = "bold"),
+    plot.margin = margin(0, 25, 0, 25), # top, right, bottom, left (in pts)
+    axis.title = element_text(size = 35),
+    axis.text = element_text(size = 35),
+    legend.position = "top",
+    legend.box = "vertical",
+    legend.title = element_text(size = 35),
+    legend.text  = element_text(size = 35),
+    legend.background = element_rect(fill = alpha("white", 0.7), colour = NA)
   )
 print(timeseries)
 
-ggsave('Output/timeseries_core_vs_edge_AND_model_vs_observations.png', plot = timeseries, width = 9, height = 6, dpi = 300)
+ggsave('Output/timeseries_core_vs_edge_AND_model_vs_observations.png', plot = timeseries, width = 16, height = 10, dpi = 300)

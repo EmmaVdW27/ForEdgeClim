@@ -3,16 +3,18 @@
 #                               ForEdgeClim
 #
 # A microclimate model that solves the energy balance equation in fragmented
-# forest areas: Rn = LE + H, where,
-# Rn = netto radiation (shortwave & longwave)
-# LE = latent heat flux (~ evapotranspiration)
+# forest areas: Rn = LE + H + G, where,
+# Rn = Net radiation (shortwave & longwave)
+# LE = Latent heat flux (~ evapotranspiration)
 # H = sensible heat flux
+# G = Ground heat flux
 ###############################################################################
 
 
 #' Execute the microclimate model ForEdgeClim
 #'
-#' @param input_data Dataframe with input variables
+#' @param structure_grid Dataframe with structural density values
+#' @param datetime Datetime object representing the current simulation time
 #' @return Dataframe with simulated microclimate temperatures and fluxes
 #' @importFrom dplyr group_by ungroup mutate left_join
 #' @export
@@ -48,12 +50,12 @@ run_foredgeclim <- function(structure_grid, datetime) {
   z_dim <<- max(z_coords)  # Length in z-direction
 
   #############################
-  # INITIALISING TEMPERATURES #
+  # INITIALIZING TEMPERATURES #
   #############################
 
   #print('Init temp 🌡️')
 
-  # First longwave RTM for initialising temperatures
+  # First longwave RTM for initializing temperatures
   micro_grid <- data.frame(
     x = x_coords,
     y = y_coords,
@@ -76,9 +78,7 @@ run_foredgeclim <- function(structure_grid, datetime) {
   G = calculate_G(net_rad_ground)
 
   # Define T_soil at ground surface from ground flux with ground conductance k_soil
-  # T_df = data.frame(x = 0:x_dim, T_soil_deep = T_soil_deep)  # make data frame for T_soil_deep
-  # micro_grid = left_join(micro_grid, T_df, by = "x")
-  micro_grid$T_soil = G * stable_soil_depth / k_soil + T_soil_deep # micro_grid$T_soil_deep
+  micro_grid$T_soil = G * stable_soil_depth / k_soil + T_soil_deep
 
   # Define micro_grid$temperature based on macro temp and initial net radiation + random noise
   micro_grid$temperature =  macro_temp + 0.01*net_radiation_init + rnorm(nrow(micro_grid), mean = 0, sd = 0.1)
@@ -97,8 +97,6 @@ run_foredgeclim <- function(structure_grid, datetime) {
   z_threshold = height_canopy  # z-value from where macro influence is being felt, ie, canopy top value
   dis_macro_x = ifelse(x_coords > x_threshold, 0, x_threshold - x_coords + 1)
   dis_macro_z = ifelse(z_coords > z_threshold, 0, z_threshold - z_coords + 1)
-  # dis_macro_x = x_dim - x_coords + 1
-  # dis_macro_z = z_dim - z_coords + 1
   dis_soil = z_coords
   dis_forest = 0.5 # size of a voxel edge = 1m, so distance from structure is on average 0.5m
   alpha_macro = log(0.5) / infl_macro
@@ -109,12 +107,12 @@ run_foredgeclim <- function(structure_grid, datetime) {
   w_soil = exp(alpha_soil*dis_soil)
   w_forest = exp(alpha_forest*dis_forest)
 
-  # Air temperature update based on a linearisation as is done in microclimc (Maclean & Klinges, 2021).
+  # Air temperature update based on a linearization as is done in microclimc (Maclean and Klinges, 2021) ad its successor microclimf.
   # The updated air temperature is weighted by the convection coefficient and the distance to each boundary.
-  # This linearisation simplifies the complex nonlinear interactions between leaves and air, making the calculations more efficient.
-  # This linearisation is mostly valid when there are small temperature differences between T air en T leaf, when there is
+  # This linearization simplifies the complex nonlinear interactions between leaves and air, making the calculations more efficient.
+  # This linearization is mostly valid when there are small temperature differences between T air en T leaf, when there is
   # sufficient air streaming, when the net radiation or the humidity is not extreme, when the forest structure is quite homogeneous.
-  # The linearisation calculates the air temperature as influenced by the macro and soil boundary temperature and the surface temperature.
+  # The linearization calculates the air temperature as influenced by the macro and soil boundary temperature and the surface temperature.
   T_air_vec = ( (w_macro_x + w_macro_z)*g_macro * macro_temp  + w_soil*g_soil * micro_grid$T_ground + w_forest*g_forest * micro_grid$temperature ) / ( (w_macro_x + w_macro_z)*g_macro + w_soil*g_soil + w_forest*g_forest)
 
   #########################################
@@ -129,15 +127,14 @@ run_foredgeclim <- function(structure_grid, datetime) {
   W_min = 0.01  # Weighting step, min value
   error_prev = Inf
 
-
   for (iter in 1:max_iter) {
 
     #print(paste0('-> Iteration ', iter))
 
 
-    ###################
-    # NETTO RADIATION #
-    ###################
+    #################
+    # NET RADIATION #
+    #################
 
     #print('   LW RTM ⛅ ')
     final_results_lw_2D = longwave_two_stream_RTM(voxel_grid, micro_grid, lw_two_stream,
@@ -150,7 +147,7 @@ run_foredgeclim <- function(structure_grid, datetime) {
     LW_up = final_results_lw_2D$F_d_up
     net_rad_ground = ifelse(z_coords == 1, SW_down - SW_up + LW_down - LW_up, NA)
 
-    # Netto radiation for structure
+    # Net radiation for structure
     net_radiation = net_SW + net_LW
 
 
@@ -218,7 +215,7 @@ run_foredgeclim <- function(structure_grid, datetime) {
       break
     }
 
-    # Use Newton's method to update surface temperature as is done in the SCOPE model
+    # Use Newton's method to update surface temperature as is done in the SCOPE 2.0 model (Yang et al. 2021)
     micro_grid$temperature <- micro_grid$temperature - ifelse(energy_balance_surf == 0, 0, W*energy_balance_surf/de_dT(micro_grid$temperature,net_radiation) )
 
     # Determine planes-averaged surface temperature (to be used in T_air_Vec update for zero-density voxels).
@@ -236,7 +233,7 @@ run_foredgeclim <- function(structure_grid, datetime) {
       ungroup()
     micro_grid$mean_temp = (micro_grid$mean_temp_x + micro_grid$mean_temp_y + micro_grid$mean_temp_z)/3
 
-    # Air temperature update based on a linearisation as is done in microclimc (Maclean & Klinges, 2021)
+    # Air temperature update based on a linearization as is done in microclimc (Maclean & Klinges, 2021).
     T_air_vec <- ( (w_macro_x + w_macro_z)*g_macro * macro_temp + w_soil*g_soil * micro_grid$T_ground + ifelse(den == 0, w_forest*g_forest * micro_grid$mean_temp, w_forest*g_forest *micro_grid$temperature) )/ ( (w_macro_x + w_macro_z)*g_macro + w_soil*g_soil + w_forest*g_forest)
 
     }

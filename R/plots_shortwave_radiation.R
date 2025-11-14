@@ -13,6 +13,11 @@ plots_sw <- function(sw_rad_2D, output_path){
   # 2D RTM plots
   ##############
 
+  # background image
+  img  <- png::readPNG("Output/horizontal_transect_2.png")
+  img[,,4] <- img[,,4] * 0.1 # make transparent
+  bg_grob <- grid::rasterGrob(img, width = unit(1, "npc"), height = unit(1, "npc"))
+
   # Calculate averages across Y-slices
   final_avg_results_2D <- sw_rad_2D |>
     group_by(X, Z) |>
@@ -66,16 +71,27 @@ plots_sw <- function(sw_rad_2D, output_path){
 
   # F_b_down plot:
   F_b_down = ggplot(final_avg_results_2D, aes(x = X, y = Z, fill = avg_F_b_down)) +
-    geom_tile() +
+    geom_tile()+
+    annotation_custom(
+      grob = bg_grob,
+      xmin = -4, xmax = 150,
+      ymin = -1, ymax = 40
+    ) +
     scale_fill_viridis_c(option = "inferno",
                          guide = guide_colorbar(barwidth = 1, barheight = 10, frame.colour = "black", ticks.colour = "black")) +
-    labs(title = paste("Vertical & lateral direct beam downward radiation, averaged across Y-slices"),
-         x = "X (m)", y = "Z (m)", fill = "SW beam down (W/m²)",
-         caption = caption) +
+    labs(title = paste("a) Direct solar beam downward radiation"),
+         fill  = bquote("Flux (W m"^-2*")       "), x = "\n", y = "\n")+#,
+        # caption = caption) +
     coord_fixed(ratio = 1) +
     theme_bw() +
     theme(
-      plot.caption = element_text(hjust = 0, color = "black")
+      plot.title = element_text(size = 20),
+      plot.caption = element_text(hjust = 0, color = "black"),
+      axis.title = element_text(size = 20),
+      axis.text = element_text(size = 16),
+      strip.text = element_text(size = 18),
+      legend.title = element_text(size = 18),
+      legend.text  = element_text(size = 16)
     )
 
   print(F_b_down)

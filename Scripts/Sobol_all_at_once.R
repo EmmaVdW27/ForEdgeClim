@@ -20,7 +20,7 @@ library(sensitivity)
 library(ggtext)
 library(progressr)
 
-# Parallelisation on HPC (supercomputer)
+# Parallelization on HPC (supercomputer)
 handlers("progress")
 cores <- as.numeric(Sys.getenv("PBS_NUM_PPN", unset = 1))
 plan(multicore, workers = cores)

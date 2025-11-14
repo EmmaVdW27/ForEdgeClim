@@ -1,6 +1,7 @@
 #' Function to create plot of DTM and density structure
 #'
-#' @param sw_rad_2D Dataframe with shortwave radiative values
+#' @param dtm Dataframe with digital terrain model
+#' @param grid Dataframe with voxelized density values
 #' @param output_path The output_path to store the plots
 #' @return Several radiation plots (plotted and saved)
 #' @importFrom dplyr filter group_by summarise
@@ -22,7 +23,7 @@ plots_dtm_struct <- function(dtm, grid, output_path){
                                   guide = guide_colorbar(barwidth = 1, barheight = 10, frame.colour = "black", ticks.colour = "black")) + # Mooie kleurenschaal
     coord_fixed() +
     theme_bw() +
-    theme(axis.title.y = element_text(angle = 0, vjust = 0.5, margin = margin(r = 10))) + # Labels horizontaal maken
+    theme(axis.title.y = element_text(angle = 0, vjust = 0.5, margin = margin(r = 10))) +
     labs(title = "Digital terrain model (DTM), top view",
                   x = "west     ——     east (m)",
                   y = "north\n \n |\n \n south (m)",
@@ -42,7 +43,7 @@ plots_dtm_struct <- function(dtm, grid, output_path){
     group_by(X, Z) |>
     summarise(mean_density = mean(density, na.rm = TRUE), .groups = 'keep')
 
-  # Voeg een lichtblauwe kleur toe voor mean_density == 0 en verwijder uit de legende
+  # Add light blue sky where mean_density == 0 and don't incorporate them in the legend
   average_density$color <- ifelse(average_density$mean_density == 0, "lightblue", NA)
 
 
@@ -54,7 +55,7 @@ plots_dtm_struct <- function(dtm, grid, output_path){
       na.value = "lightblue",
       guide = guide_colorbar(barwidth = 1, barheight = 10, frame.colour = "black", ticks.colour = "black")
     ) +
-    labs(title = paste("Normalised density, averaged across Y-slices"),
+    labs(title = paste("Normalized density, averaged across Y-slices"),
                   x = "X (m)", y = "Z (m)", fill = "Density \n(unitless)")+
     coord_fixed(ratio = 1) +
     theme_bw()

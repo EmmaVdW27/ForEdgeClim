@@ -11,7 +11,7 @@ calculate_G <- function(net_rad_ground){
   return(G)
 }
 
-#' Function to simulate air to air diffusion via heat diffusion equation. This is done in 3D.
+#' Function to simulate air to air diffusion via Fourier's law of heat conduction. This is done in 3D.
 #' In this function, air temperature is updated and ready to use for the sensible heat flux calculation.
 #'
 #' @param temp_air Air temperature
@@ -39,7 +39,7 @@ calculate_D <- function(temp_air, temp_soil){
   D_y <- array(0, dim = c(nx, ny, nz))
   D_z <- array(0, dim = c(nx, ny, nz))
 
-  # Simulate air diffusion via the heat diffusion equation
+  # Simulate air diffusion via Fourier's law
   # Zero-flux boundary condition at 'core boundaries', ie, min x, min y & max y.
   # At these boundaries the forest is assumed to continue indefinitely.
 
@@ -71,11 +71,9 @@ calculate_D <- function(temp_air, temp_soil){
   return(as.vector(total_diffusion))
 }
 
-
-
-#' Function to calculate sensible heat transfer between surface and air
+#' Function to calculate sensible heat transfer between forest surface and air
 #'
-#' @param T_surf Surface temperature
+#' @param T_surf Forest surface temperature
 #' @param T_air Air temperature
 #' @return H Sensible heat flux
 #' @export
@@ -92,7 +90,7 @@ calculate_H <- function(T_surf,T_air){
 
 #' Function for saturated vapor pressure; this is the empirical equation of Tetens
 #'
-#' @param temp Surface temperature
+#' @param temp Forest surface temperature
 #' @return Saturated vapor pressure
 #' @export
 #'
@@ -102,7 +100,7 @@ saturated_vapor_pressure <- function(temp) {
 
 #' Function to calculate latent heat flux LE (~ evapotranspiration, ET: LE = L_v . ET with L_v = latent heat of vaporization of water (J/kg))
 #'
-#' @param temperature Surface temperature
+#' @param temperature Forest surface temperature
 #' @param net_rad Net radiation
 #' @return LE Latent heat flux
 #' @export
@@ -111,7 +109,7 @@ calculate_LE <- function(temperature, net_rad) {
   # slope of the saturation pressure curve; temp in °C; slope in kPa/K = kPa/°C
   slope = 4098 * saturated_vapor_pressure(temperature) / (temperature + 237.3)^2
   # Latent heat flux by the empirical method of Priestly-Taylor
-  LE = den * alpha_PT * (net_rad) * slope / (slope + gamma_psy) # net rad - G?
+  LE = den * alpha_PT * (net_rad) * slope / (slope + gamma_psy)
   # LE cannot be negative
   LE[LE<0] = 0
 

@@ -1,12 +1,12 @@
-#' Generate a voxelised point density grid from a LAS file
+#' Generate a voxelized point density grid from a LAS file
 #'
 #' This function reads a LAS file and creates a 3D voxel grid where each voxel represents
 #' a 1x1x1m^3 volume (or a user-defined size). The density of each voxel is computed
 #' based on the number of points in the point cloud. The output is a data.table containing
 #' rescaled X, Y, and Z coordinates and a normalized density value.
 #'
-#' Additionally, a 3D plot of the voxel grid is generated and saved as a PNG file in
-#' the "Output" directory.
+#' Additionally, a 3D plot of the voxel grid and a digital terrain model (DTM) are generated and saved as PNG files in
+#' the "Output" directory, i.e. 'output_path' as defined by the user (see script 'testing_foredgeclim.R')
 #'
 #' @param las_file Path to the LAS file
 #' @param voxel_size Numeric value defining the voxel size (default = 1m).

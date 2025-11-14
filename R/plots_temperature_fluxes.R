@@ -3,10 +3,11 @@
 #' @param micro_grid Grid with micro variables
 #' @param T_air_vec Vector with air temperatures
 #' @param output_path The output_path to store the plots
+#' @param datetime yyyy-mm-dd hh:mm:ss in UTC
 #' @return Several temperature plots (plotted and saved)
 #' @importFrom dplyr filter group_by summarise
 #' @importFrom scales rescale
-#' @import ggplot2
+#' @import ggplot2 png grid
 #' @importFrom ggtext element_markdown
 #' @export
 #'
@@ -47,25 +48,40 @@ plots_temp <- function(micro_grid, T_air_vec, output_path, datetime){
     )
   )
 
-
-
   # Colors to be used in the plots
   colors = c("blue", "lightblue", "orange", "red")
 
+  # background image
+  img  <- png::readPNG("Output/horizontal_transect_2.png")
+  img[,,4] <- img[,,4] * 0.1 # make transparent
+  bg_grob <- grid::rasterGrob(img, width = unit(1, "npc"), height = unit(1, "npc"))
+
   # 2D tile plot:
   temp_surf_plot = ggplot(average_surface_temperature, aes(x = x, y = z, fill = mean_temperature)) +
-    geom_tile() +
+    geom_tile()+
+    annotation_custom(
+      grob = bg_grob,
+      xmin = -4, xmax = 150,
+      ymin = -1, ymax = 40
+    ) +
     scale_fill_gradientn(
       colors = colors,
       values = rescale(c(0.25, 0.5, 0.75, 1)),
+      #limits = c(26, 44),
       guide = guide_colorbar(barwidth = 1, barheight = 10, frame.colour = "black", ticks.colour = "black")) +
-    labs(title = paste("Surface temperature, averaged across Y-slices"),
-         x = "X (m)", y = "Z (m)", fill = "Temperature (°C)",
-         caption = caption)+
+    labs(title = paste("b) Forest surface temperature"),
+        y = "Height (m)\n ", x = "\n", fill = "Temperature (°C)")+#,
+         #caption = caption)+
     coord_fixed(ratio = 1) +
     theme_bw() +
     theme(
-      plot.caption = element_text(hjust = 0, color = "black")
+      plot.title = element_text(size = 20),
+      plot.caption = element_text(hjust = 0, color = "black"),
+      axis.title = element_text(size = 20),
+      axis.text = element_text(size = 16),
+      strip.text = element_text(size = 18),
+      legend.title = element_text(size = 18),
+      legend.text  = element_text(size = 16)
     )
 
   print(temp_surf_plot)
@@ -107,136 +123,37 @@ plots_temp <- function(micro_grid, T_air_vec, output_path, datetime){
 
   # 2D tile plot:
   temp_air_plot = ggplot(average_air_temperature, aes(x = x, y = z, fill = mean_temperature)) +
-    geom_tile() +
+    geom_tile()+
+    annotation_custom(
+      grob = bg_grob,
+      xmin = -4, xmax = 150,
+      ymin = -1, ymax = 40
+    ) +
     scale_fill_gradientn(
       colors = colors,
       values = rescale(c(0.25, 0.5, 0.75, 1)),
+      #limits = c(26, 44),
       guide = guide_colorbar(barwidth = 1, barheight = 10, frame.colour = "black", ticks.colour = "black")) +
-    labs(title = paste("Air temperature, averaged across Y-slices"),
-         x = "X (m)", y = "Z (m)", fill = "Temperature (°C)",
-         caption = caption)+
+    labs(title = paste("c) Air temperature"),
+         x = "\nDistance from forest core (m)", y = "\n", fill = "Temperature (°C)")+#,
+         #caption = caption )+
     coord_fixed(ratio = 1) +
     theme_bw() +
     theme(
-      plot.caption = element_text(hjust = 0, color = "black")
+      plot.title = element_text(size = 20),
+      plot.caption = element_text(hjust = 0, color = "black"),
+      axis.title = element_text(size = 20),
+      axis.text = element_text(size = 16),
+      strip.text = element_text(size = 18),
+      legend.title = element_text(size = 18),
+      legend.text  = element_text(size = 16)
     )
-
   print(temp_air_plot)
 
   ggsave(paste0(output_path, '/temp_air.png'), plot = temp_air_plot, width = 9, height = 3, dpi = 300)
 
 
-  # Modelled air temperature at TOMST horizontal positions
-  reqhgt <- temp_air_grid |>
-    filter(z == req_height, y == 15, x <= length_transect)
-  # Modelled air temperature at TOMST vertical positions
-  vertical <- temp_air_grid |>
-    filter(x == 75, y == 15, z <= 35)
-
-  # TOMST observations
-  TOMST <- read.csv(paste0("Data/TOMST_filtered_distance_temp_", format(datetime, "%Y%m%d_%H%M"), ".csv"))
-  TOMST_vertical <- read.csv(paste0("Data/TOMST_filtered_height_temp_", format(datetime, "%Y%m%d_%H%M"), ".csv"))
-
-  # Add dataset lable
-  reqhgt$model <- "Modelled (every 1m)"
-  TOMST$model <- "TOMST observations (every 15m)"
-
-  # 1D graph:
-  Temp_height <- ggplot() +
-    geom_line(data = reqhgt, aes(x = x, y = temperature, color = "Modelled (every 1m)")) +
-    geom_point(data = TOMST, aes(x = 135 - D_edge, y = Tair, color = "TOMST observations (every 15m)")) +
-    geom_line(data = TOMST, aes(x = 135 - D_edge, y = Tair, color = "TOMST observations (every 15m)")) +
-    labs(
-      title = "Air temperature at 1m height from forest core to edge",
-      x = "Distance (m)",
-      y = "Temperature (°C)",
-      caption = caption) +
-    scale_color_manual(
-      values = c("Modelled (every 1m)" = "#8CB4E1", "TOMST observations (every 15m)" = "#F28C8C")
-    ) +
-    theme_bw() +
-    theme(
-      legend.position = "top",
-      legend.title = element_blank(),
-      plot.caption = element_text(hjust = 0, color = "black"),
-      # as‑titels
-      axis.title.x   = element_text(size = 18, face = "bold"),
-      axis.title.y   = element_text(size = 18, face = "bold"),
-      # tick‑labels
-      axis.text.x    = element_text(size = 18),
-      axis.text.y = element_markdown(size = 18)
-    )
-
-  print(Temp_height)
-
-  ggsave(paste0(output_path, '/temp_air_reqhgt.png'), plot = Temp_height, width = 10, height = 6, dpi = 300)
-
-  # 1D graph for presentations:
-  Temp_height_TOMST <- ggplot() +
-    geom_line(data = reqhgt, aes(x = x, y = temperature, color = "Modelled (every 1m)")) +
-    geom_point(data = TOMST, aes(x = 135 - D_edge, y = Tair, color = "TOMST observations (every 15m)")) +
-    geom_line(data = TOMST, aes(x = 135 - D_edge, y = Tair, color = "TOMST observations (every 15m)")) +
-    labs(
-      x = "Distance (m)",
-      y = "Temperature (°C)",
-      ) +
-    scale_color_manual(
-      values = c("Modelled (every 1m)" = "#8CB4E1", "TOMST observations (every 15m)" = "#F28C8C")
-    ) +
-    theme_bw() +
-    theme(
-      legend.position = "top",
-      legend.title = element_blank(),
-      legend.text  = element_text(size = 18),
-      # as‑titels
-      axis.title.x   = element_text(size = 18, face = "bold"),
-      axis.title.y   = element_text(size = 18, face = "bold"),
-      # tick‑labels
-      axis.text.x    = element_text(size = 18),
-      axis.text.y = element_markdown(size = 18)
-    ) +
-    coord_cartesian(ylim = c(-5, 31))
-
-  print(Temp_height_TOMST)
-
-  ggsave(paste0(output_path, '/temp_air_reqhgt_TOMST.png'), plot = Temp_height_TOMST, width = 10, height = 6, dpi = 300)
-
-  # 1D graph with TOMST vertical observations to compare with:
-  Temp_vertical_TOMST <- ggplot() +
-    geom_path(data = vertical, aes(x = temperature, y = z, color = "Modelled (every 1m)")) +
-    geom_point(data = TOMST_vertical, aes(x = Tair, y = height, color = "TOMST observations (every 7m)")) +
-    geom_path(data = TOMST_vertical, aes(x = Tair, y = height, color = "TOMST observations (every 7m)")) +
-    labs(
-      x = "Temperature (°C)",
-      y = "Height (m)",
-    ) +
-    scale_color_manual(
-      values = c("Modelled (every 1m)" = "#8CB4E1", "TOMST observations (every 7m)" = "#F28C8C")
-    ) +
-    theme_bw() +
-    theme(
-      legend.position = "top",
-      legend.title = element_blank(),
-      legend.text  = element_text(size = 18),
-      # as‑titels
-      axis.title.x   = element_text(size = 18, face = "bold"),
-      axis.title.y   = element_text(size = 18, face = "bold"),
-      # tick‑labels
-      axis.text.x    = element_text(size = 18),
-      axis.text.y = element_markdown(size = 18)
-    ) +
-    coord_cartesian(xlim = c(min(vertical$temperature)-3, max(vertical$temperature)))
-
-  print(Temp_vertical_TOMST)
-
-  ggsave(paste0(output_path, '/temp_air_vertical_TOMST.png'), plot = Temp_vertical_TOMST, width = 10, height = 6, dpi = 300)
-
-
-
-
 }
-
-
 
 #' Function to create several flux plots
 #'
@@ -246,6 +163,7 @@ plots_temp <- function(micro_grid, T_air_vec, output_path, datetime){
 #' @param latent_flux Vector with latent heat fluxes
 #' @param G Vector with ground heat fluxes
 #' @param output_path The output_path to store the plots
+#' @param datetime yyyy-mm-dd hh:mm:ss in UTC
 #' @return Several flux plots (plotted and saved)
 #' @importFrom dplyr filter group_by summarise
 #' @importFrom scales rescale
@@ -283,7 +201,6 @@ plots_flux <- function(micro_grid, net_radiation, sensible_flux, latent_flux, G,
       D = round(F_sky_diff_init, 2)
     )
   )
-
 
   # Colors to be used in the plots
   colors = c("blue", "lightblue", "orange", "red")

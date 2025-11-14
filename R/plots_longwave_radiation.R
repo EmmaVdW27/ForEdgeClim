@@ -1,6 +1,6 @@
 #' Function to create several longwave radiation plots
 #'
-#' @param sw_rad_2D Dataframe with shortwave radiative values
+#' @param lw_rad_2D Dataframe with longwave radiative values
 #' @param output_path The output_path to store the plots
 #' @return Several radiation plots (plotted and saved)
 #' @importFrom dplyr filter group_by summarise
