@@ -1,13 +1,12 @@
 ###############################################################################
 #
-# This is an example script that shows you how the microclimate model ForEdgeClim
+# This is an example script to show you how the microclimate model ForEdgeClim
 # can be run. To run the model, you need to define several variables, input and
-# output files.
+# output files. The code below is similar to the script 'testing_foredgeclim.R'.
 #
 # Author: Emma Van de Walle - Q-ForestLab
 #
 ###############################################################################
-
 
 
 library(ForEdgeClim)
@@ -22,7 +21,7 @@ end_time <- as.POSIXct("2023-07-08 12:00:00", tz = "UTC")   # last hour you want
 datetime_series <- seq(start_time, end_time, by = "hour")   # ForEdgeClim is run for all the hours between the first and last hour
 TLS_input_file <- 'Data/2025-04-08_ForSe_Gontrode_5cm_transect_emma.las' # original TLS las file
 TLS_filtered_file <- 'Data/TLS_scaled_DTM_and_grid_July2023.rds' # Once the structural voxel grid has been made using the
-# function generate_DTM_grid_TLS(), you can also immediately use the TLS_filtered_file.
+# function generate_DTM_grid_TLS() (see further below), you can also immediately use the TLS_filtered_file.
 
 for (current_datetime in datetime_series) {
 
@@ -58,7 +57,7 @@ for (current_datetime in datetime_series) {
   import_soil_temperature(current_datetime)
 
   #######################
-  # Creation of 3D grid #
+  # CREATION OF 3D GRID #
   #######################
 
   #print('3D grid 🌲🌳🌲🌳🌲')
@@ -68,21 +67,21 @@ for (current_datetime in datetime_series) {
   #voxel_TLS = readRDS(TLS_filtered_file)
 
   #############
-  # Run model #
+  # RUN MODEL #
   #############
 
   res = run_foredgeclim(voxel_TLS$grid, current_datetime)
   saveRDS(res, paste0(output_path, '/model_results.rds'))
 
   ############
-  # Plotting #
+  # PLOTTING #
   ############
 
   # Digital Terrain Model & structural grid plots
   plots_dtm_struct(dtm = voxel_TLS$dtm, grid = voxel_TLS$grid, output_path)
 
   # Shortwave radiation plots
-   plots_sw(sw_rad_2D = res$sw_rad_2D, output_path)
+  plots_sw(sw_rad_2D = res$sw_rad_2D, output_path)
 
   # Longwave radiation plots
   plots_lw(lw_rad_2D = res$lw_rad_2D, output_path)
@@ -91,10 +90,8 @@ for (current_datetime in datetime_series) {
   plots_flux(res$micro_grid, res$net_radiation, res$sensible_flux, res$latent_flux, res$ground_flux, output_path, current_datetime)
 
   # Temperature plots
-   plots_temp(res$micro_grid, res$air_temperature, output_path, current_datetime)
+  plots_temp(res$micro_grid, res$air_temperature, output_path, current_datetime)
 
 }
 end_timeseries = Sys.time()
 print(paste0('Total running time timeseries = ', round(as.numeric(end_timeseries - start_timeseries, units = "secs"), 2), ' s'))
-
-

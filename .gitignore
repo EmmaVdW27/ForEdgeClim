@@ -5,7 +5,7 @@ Parameter_values_from_literature/
 Issues ForEdgeClim.txt
 fast_load.R
 Data/*
-!Data/model_results_file/
+!Data/model_result_files/
 !Data/Macro_temp_plant_eco.txt
 !Data/pyranometer_tower.dat
 !Data/RMI_Melle.csv
@@ -22,17 +22,7 @@ Output/*
 !Output/horizontal_transect.png
 !Output/horizontal_transect_2.png
 !Output/vertical_transect.png
-Scripts/*
-!Scripts/CMA-ES_plots.R
-!Scripts/CMA-ES.R
-!Scripts/Sobol_all_at_once.R
-!Scripts/Sobol_indices_airT_horizontal.R
-!Scripts/Sobol_indices_forest_surfaceT_horizontal.R
-!Scripts/Tair_horizontal_multiple_timepoints.R
-!Scripts/Tair_vertical_multiple_timepoints.R
-!Scripts/testing_foredgeclim.R
-!Scripts/timeseries_core_vs_edge_AND_model_vs_observations.R
-!Scripts/validation_plots_cal_and_uncal.R
-!Scripts/validation.R
+Scripts/older_scripts/
+Scripts/combine_figures
 
 
