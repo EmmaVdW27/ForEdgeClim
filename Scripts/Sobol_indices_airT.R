@@ -28,9 +28,9 @@ input_path <- "Output/sensitivity_analysis/Sobol_QoI/data/"
 output_path_plots <- "Output/sensitivity_analysis/Sobol_QoI/plots_output/"
 output_path_numbers <- "Output/sensitivity_analysis/Sobol_QoI/numbers_output/"
 
-output_plot_focused_parameters_by_condition_normalized <- "Sobol_indices_airT_vertical.png" # _horizontal or _vertical
+output_plot_focused_parameters_by_condition_normalized <- "Sobol_indices_airT_horizontal.png" # _horizontal or _vertical
 
-direction = 'v' # v or 'h
+direction = 'h' # v or 'h
 
 # File list with labels
 files_info <- tribble(
@@ -350,12 +350,12 @@ avg_param_by_season  <- sobol_df %>% filter(!is.na(season)) %>%
 # get ranges on the contributions for top 3 parameters across conditions
 #target_params <- c("infl_soil" , "infl_macro", "k_soil") #c("infl_macro", "infl_soil", "g_macro")
 # SW parameters:
-#target_params <- c("betad", "beta0", "omega", "Kd_v", "Kb_v", "omega_g_v", "Kd_h", "Kb_h", "omega_g_h")
+target_params <- c("betad", "beta0", "omega", "Kd_v", "Kb_v", "omega_g_v", "Kd_h", "Kb_h", "omega_g_h")
 # LW parameters:
 #target_params <- c("e_forest", "beta_lw", "omega_lw", "Kd_lw_v", "omega_g_lw_v", "Kd_lw_h", "omega_g_lw_h")
 # rad params
-target_params <- c("betad", "beta0", "omega", "Kd_v", "Kb_v", "omega_g_v", "Kd_h", "Kb_h", "omega_g_h",
-                   "e_forest", "beta_lw", "omega_lw", "Kd_lw_v", "omega_g_lw_v", "Kd_lw_h", "omega_g_lw_h")
+# target_params <- c("betad", "beta0", "omega", "Kd_v", "Kb_v", "omega_g_v", "Kd_h", "Kb_h", "omega_g_h",
+#                    "e_forest", "beta_lw", "omega_lw", "Kd_lw_v", "omega_g_lw_v", "Kd_lw_h", "omega_g_lw_h")
 
 range_metric <- avg_param_by_metric %>%
   filter(parameter %in% target_params) %>%
@@ -399,6 +399,7 @@ avg_process_by_moment <- process_by_label %>% filter(!is.na(moment)) %>%
 avg_process_by_season <- process_by_label %>% filter(!is.na(season)) %>%
   group_by(season, process) %>%
   summarise(mean_share = mean(process_share), sd_share   = sd(process_share), .groups = "drop")
+
 
 #------------------------------------------------------------------------------
 
@@ -477,3 +478,41 @@ write_csv(rank_consistency_moment, file.path(output_path_numbers, "rank_consiste
 write_csv(rank_consistency_season, file.path(output_path_numbers, "rank_consistency_season_ah.csv"))
 
 
+###############################################################################
+# CONFIDENCE INTERVALS FOR FOCUSED PARAMETERS (as shown in the plot)
+###############################################################################
+
+focused_param_ci <- sobol_df %>%
+
+  # group parameters exactly as in the plot
+  mutate(grouped_param = case_when(
+    parameter %in% focus_params ~ parameter,
+    parameter %in% SW_params ~ "SW",
+    parameter %in% LW_params ~ "LW",
+    TRUE ~ NA_character_
+  )) %>%
+
+  filter(!is.na(grouped_param)) %>%
+
+  # sum contributions per condition (as in the plot)
+  group_by(label, grouped_param) %>%
+  summarise(share = sum(norm_value), .groups = "drop") %>%
+
+  # calculate CI across conditions
+  group_by(grouped_param) %>%
+  summarise(
+    mean_share = mean(share),
+    sd_share   = sd(share),
+    n          = n(),
+    se         = sd_share / sqrt(n),
+    CI_low     = pmax(0, mean_share - 1.96 * se),
+    CI_high    = mean_share + 1.96 * se,
+    .groups = "drop"
+  ) %>%
+
+  arrange(desc(mean_share))
+
+write_csv(
+  focused_param_ci,
+  file.path(output_path_numbers, "focused_parameter_CI_ah.csv")
+)

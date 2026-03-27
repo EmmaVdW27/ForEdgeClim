@@ -29,9 +29,9 @@ output_path_plots <- "Output/sensitivity_analysis/Sobol_QoI/plots_output/"
 output_path_numbers <- "Output/sensitivity_analysis/Sobol_QoI/numbers_output/"
 
 
-output_plot_focused_parameters_by_condition_normalized <- "Sobol_indices_forest_surfaceT_vertical.png"
+output_plot_focused_parameters_by_condition_normalized <- "Sobol_indices_forest_surfaceT_horizontal.png"
 
-direction = 'v' # v or h
+direction = 'h' # v or h
 
 # File list with labels
 files_info <- tribble(
@@ -355,7 +355,7 @@ avg_param_by_season  <- sobol_df %>% filter(!is.na(season)) %>%
   summarise(mean_index = mean(norm_value), sd_index = sd(norm_value), .groups = "drop")
 
 # get ranges on the contributions for top 4 parameters across conditions
-#target_params <- c("infl_macro", "g_forest")
+target_params <- c("infl_macro", "infl_soil")
 # top 1 parameter
 #target_params <- c("g_forest")
 # # SW parameters:
@@ -363,8 +363,8 @@ avg_param_by_season  <- sobol_df %>% filter(!is.na(season)) %>%
 # LW parameters:
 #target_params <- c("e_forest", "beta_lw", "omega_lw", "Kd_lw_v", "omega_g_lw_v", "Kd_lw_h", "omega_g_lw_h")
 # rad params
-target_params <- c("betad", "beta0", "omega", "Kd_v", "Kb_v", "omega_g_v", "Kd_h", "Kb_h", "omega_g_h",
-                   "e_forest", "beta_lw", "omega_lw", "Kd_lw_v", "omega_g_lw_v", "Kd_lw_h", "omega_g_lw_h")
+# target_params <- c("betad", "beta0", "omega", "Kd_v", "Kb_v", "omega_g_v", "Kd_h", "Kb_h", "omega_g_h",
+#                    "e_forest", "beta_lw", "omega_lw", "Kd_lw_v", "omega_g_lw_v", "Kd_lw_h", "omega_g_lw_h")
 
 range_metric <- avg_param_by_metric %>%
   filter(parameter %in% target_params) %>%

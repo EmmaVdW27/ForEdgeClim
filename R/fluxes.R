@@ -105,11 +105,11 @@ saturated_vapor_pressure <- function(temp) {
 #' @return LE Latent heat flux
 #' @export
 #'
-calculate_LE <- function(temperature, net_rad) {
+calculate_LE <- function(temperature, net_rad, G) {
   # slope of the saturation pressure curve; temp in °C; slope in kPa/K = kPa/°C
   slope = 4098 * saturated_vapor_pressure(temperature) / (temperature + 237.3)^2
   # Latent heat flux by the empirical method of Priestly-Taylor
-  LE = den * alpha_PT * (net_rad) * slope / (slope + gamma_psy)
+  LE = den * alpha_PT * (net_rad - G) * slope / (slope + gamma_psy)
   # LE cannot be negative
   LE[LE<0] = 0
 

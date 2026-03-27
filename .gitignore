@@ -3,6 +3,7 @@
 Data_to_ignore/
 Parameter_values_from_literature/
 fast_load.R
+Blender_input.R
 Data/*
 !Data/model_TOMST_result_files/
 !Data/pyranometer_tower.dat
@@ -23,5 +24,8 @@ Output/*
 Scripts/older_scripts/
 Scripts/combine_figures.R
 Scripts/voxelize_transect_image.R
+Scripts/timeseries_Gontrode.R
+Scripts/timeseries_Gontrode_plot.R
+Scripts/Blender_input_whole_day.R
 
 

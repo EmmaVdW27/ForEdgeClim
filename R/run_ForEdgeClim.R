@@ -149,13 +149,16 @@ run_foredgeclim <- function(structure_grid, datetime, trace_idx = NULL) {
     ###############
 
     # G is positive if E is entering the soil
+
     G = calculate_G(net_rad_ground)
-    micro_grid$T_soil = G*stable_soil_depth/k_soil + T_soil_deep # micro_grid$T_soil_deep
+    micro_grid$T_soil = G*stable_soil_depth/k_soil + T_soil_deep
     micro_grid <- micro_grid |>
       group_by(x, y) |>
       mutate(T_ground = T_soil[z == 1][1])  |>
       ungroup()
 
+    G_voxel <- rep(0, length(net_radiation))
+    G_voxel[z_coords == 1] <- G[z_coords == 1]
 
     #############################
     # AIR TO AIR HEAT DIFFUSION #
@@ -176,31 +179,15 @@ run_foredgeclim <- function(structure_grid, datetime, trace_idx = NULL) {
     # LATENT HEAT FLUX #
     ####################
 
-    latent_flux <- calculate_LE(micro_grid$temperature-273.15,net_radiation) # temp in calculate_LE must be in °C
+    latent_flux <- calculate_LE(micro_grid$temperature-273.15,net_radiation, G_voxel) # temp in calculate_LE must be in °C
 
 
     ##################
     # ENERGY BALANCE #
     ##################
 
-    energy_balance_surf <- net_radiation - sensible_flux - latent_flux
+    energy_balance_surf <- den*net_radiation - sensible_flux - latent_flux
     error_current = max(abs(energy_balance_surf))
-
-    # ---- Optional trace logging for selected voxels ----
-    if (!is.null(trace_idx)) {
-      valid_idx <- trace_idx[trace_idx >= 1 & trace_idx <= nrow(micro_grid)]
-
-      trace_list[[iter]] <- data.frame(
-        iter = iter,
-        voxel_id = valid_idx,
-        x = micro_grid$x[valid_idx],
-        y = micro_grid$y[valid_idx],
-        z = micro_grid$z[valid_idx],
-        T_surface = micro_grid$temperature[valid_idx],
-        T_air     = T_air_vec[valid_idx],
-        E_residual = energy_balance_surf[valid_idx]
-      )
-    }
 
     # Check oscillations, if so, reduce W
     if (iter > 1 && error_current > error_prev) {
@@ -237,12 +224,6 @@ run_foredgeclim <- function(structure_grid, datetime, trace_idx = NULL) {
 
   }
 
-  if (!is.null(trace_idx)) {
-    trace_df <- dplyr::bind_rows(trace_list)
-  } else {
-    trace_df <- NULL
-  }
-
 
   res <- list(
     sw_rad_2D = final_results_2D, # SW RTM output
@@ -252,9 +233,8 @@ run_foredgeclim <- function(structure_grid, datetime, trace_idx = NULL) {
     net_radiation = net_radiation,
     sensible_flux = sensible_flux,
     latent_flux = latent_flux,
-    ground_flux = G,
-    newton_trace = trace_df
-  )
+    ground_flux = G
+    )
 
 
   return(res)

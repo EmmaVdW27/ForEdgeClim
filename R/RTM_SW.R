@@ -173,6 +173,15 @@ shortwave_two_stream_RTM <- function(datetime, lat, lon, voxel_grid,
 
   voxel_grid <- as.data.table(voxel_grid)
 
+  # Seasonal parameter scaling
+  month <- as.integer(format(datetime, "%m"))
+
+  if (month %in% c(11, 12, 1, 2, 3)) {
+    omega <- omega * 0.6      # reduce scattering
+    betad <- betad * 1.15     # slightly more backscatter
+    beta0 <- beta0 * 1.15
+  }
+
   # Calculate solar angles
   calculate_sun_angle <- function(datetime, lat, lon) {
     sun_angle <- getSunlightPosition(date = datetime, lat = lat, lon = lon)
