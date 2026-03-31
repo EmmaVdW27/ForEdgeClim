@@ -486,3 +486,42 @@ write_csv(rank_consistency_moment, file.path(output_path_numbers, "rank_consiste
 write_csv(rank_consistency_season, file.path(output_path_numbers, "rank_consistency_season_fh.csv"))
 
 
+###############################################################################
+# CONFIDENCE INTERVALS FOR FOCUSED PARAMETERS (as shown in the plot)
+###############################################################################
+
+focused_param_ci <- sobol_df %>%
+
+  # group parameters exactly as in the plot
+  mutate(grouped_param = case_when(
+    parameter %in% c("g_forest") ~ "g_forest",
+    parameter %in% focus_params ~ parameter,
+    parameter %in% SW_params ~ "SW",
+    parameter %in% LW_params ~ "LW",
+    TRUE ~ NA_character_
+  )) %>%
+
+  filter(!is.na(grouped_param)) %>%
+
+  # sum contributions per condition (as in the plot)
+  group_by(label, grouped_param) %>%
+  summarise(share = sum(norm_value), .groups = "drop") %>%
+
+  # calculate CI across conditions
+  group_by(grouped_param) %>%
+  summarise(
+    mean_share = mean(share),
+    sd_share   = sd(share),
+    n          = n(),
+    se         = sd_share / sqrt(n),
+    CI_low     = pmax(0, mean_share - 1.96 * se),
+    CI_high    = mean_share + 1.96 * se,
+    .groups = "drop"
+  ) %>%
+
+  arrange(desc(mean_share))
+
+write_csv(
+  focused_param_ci,
+  file.path(output_path_numbers, glue("focused_parameter_CI_f{direction}.csv"))
+)

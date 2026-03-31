@@ -486,6 +486,7 @@ focused_param_ci <- sobol_df %>%
 
   # group parameters exactly as in the plot
   mutate(grouped_param = case_when(
+    parameter %in% c("infl_macro", "infl_soil", "k_soil") ~ "soil_macro_group",
     parameter %in% focus_params ~ parameter,
     parameter %in% SW_params ~ "SW",
     parameter %in% LW_params ~ "LW",
@@ -514,5 +515,5 @@ focused_param_ci <- sobol_df %>%
 
 write_csv(
   focused_param_ci,
-  file.path(output_path_numbers, "focused_parameter_CI_ah.csv")
+  file.path(output_path_numbers, glue("focused_parameter_CI_a{direction}.csv"))
 )
