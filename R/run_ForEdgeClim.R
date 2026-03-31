@@ -186,7 +186,7 @@ run_foredgeclim <- function(structure_grid, datetime, trace_idx = NULL) {
     # ENERGY BALANCE #
     ##################
 
-    energy_balance_surf <- den*net_radiation - sensible_flux - latent_flux
+    energy_balance_surf <- net_radiation - sensible_flux - latent_flux
     error_current = max(abs(energy_balance_surf))
 
     # Check oscillations, if so, reduce W
