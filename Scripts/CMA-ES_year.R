@@ -34,7 +34,7 @@ start_analysis <- Sys.time()
 # We calibrate on 3 days per season: the most sunny day, the most cloudy day
 # and the day with most solar fluctuations (respectively).
 
-date_string <- 'all_seasons_25_generations'
+date_string <- 'all_seasons_50_generations'
 
 ## SPRING
 spring_datetimes <- c(
@@ -157,7 +157,7 @@ names(structures_scaled) <- names(structures)
 
 param_set <- "top_3"   # "all" | "focused" | "top_3"
 
-max_it        <- 24     # generations (there will be max_it + 1 generations)
+max_it        <- 49     # generations (there will be max_it + 1 generations)
 stop_fitness  <- 1      # RMSE target (°C)
 lambda        <- NULL   # if NULL we set a heuristic later
 
@@ -194,7 +194,7 @@ if (param_set == "all") {
   # Fixed parameters (LW RTM)
   e_forest <<- 0.965; beta_lw <<- 0.325; omega_lw <<- 0.035; Kd_lw_v <<- 0.3; omega_g_lw_v <<- 0.055; Kd_lw_h <<- 0.3; omega_g_lw_h <<- 0.035
   # Fixed parameters (HEAT)
-  h <<- 10; infl_soil <<- 5; infl_forest <<- 5; g_forest <<- 12.5; p_ground <<- 0.225; g_soil <<- 10; g_macro <<- 25
+  h <<- 10; infl_forest <<- 5; g_forest <<- 12.5; p_ground <<- 0.225; g_soil <<- 10; g_macro <<- 25
 }
 
 # Initial values (mean value from uniform parameter distributions)
@@ -245,7 +245,7 @@ set_params_from_vec <- function(par) {
     h <<- par[1]; g_macro <<- par[2]; infl_macro <<- par[3]; infl_soil <<- par[4]; infl_forest <<- par[5]; g_forest <<- par[6]
     p_ground <<- par[7]; g_soil <<- par[8]; k_soil <<- par[9]
   } else { # top_3
-    g_macro <<- par[1]; infl_macro <<- par[2]; infl_soil <<- par[3]
+    k_soil <<- par[1]; infl_macro <<- par[2]; infl_soil <<- par[3]
   }
 }
 

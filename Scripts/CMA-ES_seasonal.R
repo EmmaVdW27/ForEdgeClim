@@ -54,6 +54,7 @@ all_datetimes <- c(
   )
 )
 
+
 # For spring and autumn, there are 2 years to be taken into account,
 # for summer and winter, there is only 1 year.
 structures <- list(
@@ -75,7 +76,7 @@ names(structures_scaled) <- names(structures)
 
 param_set <- "top_3"   # "all" | "focused" | "top_3"
 
-max_it        <- 50     # generations (there will be max_it + 1 generations)
+max_it        <- 49     # generations (there will be max_it + 1 generations)
 stop_fitness  <- 1      # RMSE target (°C)
 lambda        <- NULL   # if NULL we set a heuristic later
 
@@ -112,7 +113,7 @@ if (param_set == "all") {
   # Fixed parameters (LW RTM)
   e_forest <<- 0.965; beta_lw <<- 0.325; omega_lw <<- 0.035; Kd_lw_v <<- 0.3; omega_g_lw_v <<- 0.055; Kd_lw_h <<- 0.3; omega_g_lw_h <<- 0.035
   # Fixed parameters (HEAT)
-  h <<- 10; infl_soil <<- 5; infl_forest <<- 5; g_forest <<- 12.5; p_ground <<- 0.225; g_soil <<- 10; g_macro <<- 25
+  h <<- 10; infl_forest <<- 5; g_forest <<- 12.5; p_ground <<- 0.225; g_soil <<- 10; g_macro <<- 25
 }
 
 # Initial values (mean value from uniform parameter distributions)
