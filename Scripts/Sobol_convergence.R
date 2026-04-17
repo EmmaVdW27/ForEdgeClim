@@ -1,7 +1,5 @@
-
 ###############################################################################
 # Sobol convergence analysis (200 vs 400 LHS samples)
-# ALL cases combined into 1 facetted plot (4 panels)
 #
 # Author: Emma Van de Walle - Q-ForestLab
 ###############################################################################
@@ -165,7 +163,7 @@ run_case <- function(temp, direction) {
     ) %>%
     mutate(type = "sum")
 
-  # Combine + RETURN (dit is wat de functie moet teruggeven!)
+  # Combine + RETURN
   result <- bind_rows(conv_params, conv_sum) %>%
     mutate(
       temp = temp,
@@ -214,17 +212,17 @@ p_final <- ggplot(all_results,
   scale_colour_manual(
     values = c(
       "sum" = "black",
-      "infl_macro" = "blue",  # blauw
-      "infl_soil"  = "red",  # rood
-      "k_soil"     = "orange",  # oranje
-      "g_forest"   = "darkgreen"   # groen
+      "infl_macro" = "blue",
+      "infl_soil"  = "red",
+      "k_soil"     = "orange",
+      "g_forest"   = "darkgreen"
     ),
     labels = c(
       "sum"          = "Sum",
-      "infl_macro"   = TeX("$i_m$"),
-      "infl_soil"    = TeX("$i_s$"),
-      "k_soil"       = TeX("$k_s$"),
-      "g_forest"     = TeX("$g_f$")
+      "infl_macro"   = expression(italic(i)[m]),
+      "infl_soil"    = expression(italic(i)[s]),
+      "k_soil"       = expression(italic(k)[s]),
+      "g_forest"     = expression(italic(g)[f])
     ),
     breaks = c("sum", "infl_macro", "infl_soil", "k_soil", "g_forest"),
     name = NULL
@@ -248,7 +246,7 @@ p_final <- ggplot(all_results,
   ) +
   geom_text(
     data = all_results %>% filter(type == "sum"),
-    aes(label = round(mean_value, 2)),
+    aes(label = sprintf("%.2f", mean_value)),
     nudge_y = 0.1,
     size = 5,
     colour = "black"

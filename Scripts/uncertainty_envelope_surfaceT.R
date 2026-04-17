@@ -23,14 +23,14 @@ library(ggh4x)
 input_path  <- "Output/sensitivity_analysis/Sobol_QoI/data/"
 output_path <- "Output/sensitivity_analysis/Sobol_QoI/plots_output/"
 
-direction <- "h"   # 'h' or 'v'
+direction <- "v"   # 'h' or 'v'
 N <- 400           # number of Sobol base samples
 
 # File list (forest surface temperature version!)
 files_info <- tribble(
   ~file, ~label,
 
-  #winter files
+  # winter files
   # night
   glue("400samples_25parameters_01h_13012025_avTf_{direction}.rds"),     "Wi_Ni_≈T",
   glue("400samples_25parameters_01h_13012025_SDTf_{direction}.rds"),     "Wi_Ni_σT",
@@ -137,6 +137,26 @@ output_df <- output_df %>%
 median_df <- output_df %>%
   group_by(season, moment, metric) %>%
   summarise(median = median(Y), .groups = "drop")
+
+##########
+# 95% INTERVAL WIDTH PER FACET
+##########
+
+ci95_df <- output_df %>%
+  group_by(season, moment, metric) %>%
+  summarise(
+    q2.5 = quantile(Y, 0.025, na.rm = TRUE),
+    q97.5 = quantile(Y, 0.975, na.rm = TRUE),
+    width_95 = q97.5 - q2.5,
+    .groups = "drop"
+  )
+
+# globale min/max van 95% intervals
+min_ci95 <- min(ci95_df$width_95, na.rm = TRUE)
+max_ci95 <- max(ci95_df$width_95, na.rm = TRUE)
+
+cat("Minimum 95% CI width:", round(min_ci95, 3), "°C\n")
+cat("Maximum 95% CI width:", round(max_ci95, 3), "°C\n")
 
 ##########
 # FACET DENSITY PLOT

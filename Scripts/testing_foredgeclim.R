@@ -16,8 +16,8 @@ start_script = Sys.time()
 # INPUT #
 #########
 
-start_time <- as.POSIXct("2023-07-08 12:00:00", tz = "UTC") # first hour you want to run the model for
-end_time <- as.POSIXct("2023-07-08 12:00:00", tz = "UTC")   # last hour you want to run the model for
+start_time <- as.POSIXct("2025-01-15 12:00:00", tz = "UTC") # first hour you want to run the model for
+end_time <- start_time   # last hour you want to run the model for
 datetime_series <- seq(start_time, end_time, by = "hour")   # ForEdgeClim is run for all the hours between the first and last hour
 TLS_input_file <- 'Data/2023-07-10_ForSe_Gontrode_5cm_transect_emma.las' # original TLS las file
 TLS_filtered_file <- 'Data/TLS_scaled_DTM_and_grid_July2023.rds' # Once the structural voxel grid has been made using the
